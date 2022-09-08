@@ -34,7 +34,6 @@ Q = exp.(ln_Q)
 
 #Step 1.1.5: Plot Empirical Distributions of P and Q
 using Plots
-
 plot(ln_Q, ln_P, seriestype = :scatter, title = "Log Price and Quantity", xlabel = "Log Quantity", ylabel = "Log Price")
 
 
