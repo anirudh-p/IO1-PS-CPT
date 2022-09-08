@@ -3,6 +3,7 @@
     #using Pkg;
     #Pkg.add("Distributions") // Importing the Distributions Package
     #Pkg.add("Plots")         // Importing the Plot Package
+    #Pkg.add("DataFrame")     // Dataframe of 
     
 
 #Step 1.1.1: Fix Parameter Values
@@ -39,6 +40,7 @@ plot(ln_Q, ln_P, seriestype = :scatter, title = "Log Price and Quantity", xlabel
 
 #Step 1.2.1.1: Report OLS Estimate of β_2
 simulated = DataFrame(ln_Q = ln_Q, ln_P = ln_P)
-ols = lm(@formula(ln_P ~ ln_Q), simulated)
+ols = lm(@formula(ln_Q ~ ln_P), simulated)
 
 #Step 1.2.2.1: MoM
+
