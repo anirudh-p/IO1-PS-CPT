@@ -42,5 +42,20 @@ plot(ln_Q, ln_P, seriestype = :scatter, title = "Log Price and Quantity", xlabel
 simulated = DataFrame(ln_Q = ln_Q, ln_P = ln_P)
 ols = lm(@formula(ln_Q ~ ln_P), simulated)
 
-#Step 1.2.2.1: MoM
+#Step 1.2.2.2: MoM
+#Assume Z has Normal (0,1), γ = .5
+
+g = zeros((100,2))
+γ = .5
+s_z = 1
+for i in 1:100
+    ln_Z = rand(Normal(0,1), 50)
+    ϵ_D = rand(Normal(0,1), 50)
+    s_a = s_s - γ^2*s_z
+    ln_a = rand(Normal(0,s_a), 50)
+    ϵ_a = γ*ln_Z + ln_a
+    ln_P = (1/(1+β_2*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
+    ln_Q = β_1 .- β_2*ln_P .+ ϵ_D
+    #g(i,1) = 
+    #g(i,2) = 
 
