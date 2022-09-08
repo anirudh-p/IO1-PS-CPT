@@ -4,7 +4,7 @@
     #Pkg.add("Distributions") // Importing the Distributions Package
     #Pkg.add("Plots")         // Importing the Plot Package
     #Pkg.add("DataFrame")     // Importing the Dataframe Package
-    
+    #Pkg.add("LinearAlgebra")
 
 #Step 1.1.1: Fix Parameter Values
 β_1 = 0
@@ -43,18 +43,26 @@ ols = lm(@formula(ln_Q ~ ln_P), simulated)
 
 #Step 1.2.2.2: MoM
 #Assume Z has Normal (0,1), γ = .5
+using LinearAlgebra
 
+#Do simulations
+num_s = 100
 g = zeros((100,2))
 γ = .5
 s_z = 1
-for i in 1:100
+for i in 1:num_s
     ln_Z = rand(Normal(0,1), 50)
     ϵ_D = rand(Normal(0,1), 50)
-    s_a = s_s - γ^2*s_z
+    s_a = s_S - γ^2*s_z
     ln_a = rand(Normal(0,s_a), 50)
     ϵ_a = γ*ln_Z + ln_a
     ln_P = (1/(1+β_2*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
     ln_Q = β_1 .- β_2*ln_P .+ ϵ_D
-    #g(i,1) = 
-    #g(i,2) = 
+    g[i,1] = dot(ln_Z, ln_Q) 
+    g[i,2] = dot(ln_Z, ln_P)
+end
 
+#Compute simulated moments
+
+
+sim_g = (1/num_s)*sum(g',dims=2)
