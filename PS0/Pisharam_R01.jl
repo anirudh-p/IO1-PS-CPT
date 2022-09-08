@@ -33,9 +33,12 @@ Q = exp.(ln_Q)
 
 #Step 1.1.5: Plot Empirical Distributions of P and Q
 using Plots
-y=P; x=Q;
-plot(x, y, seriestype = :scatter, title = "P vs Q")
 
-#Step 1.2.1: OLS Regression
+plot(ln_Q, ln_P, seriestype = :scatter, title = "Log Price and Quantity", xlabel = "Log Quantity", ylabel = "Log Price")
 
-#Step 1.2.2: Method of Moments
+
+#Step 1.2.1.1: Report OLS Estimate of β_2
+simulated = DataFrame(ln_Q = ln_Q, ln_P = ln_P)
+ols = lm(@formula(ln_P ~ ln_Q), simulated)
+
+#Step 1.2.2.1: MoM
