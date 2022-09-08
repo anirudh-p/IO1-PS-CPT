@@ -3,7 +3,7 @@
     #using Pkg;
     #Pkg.add("Distributions") // Importing the Distributions Package
     #Pkg.add("Plots")         // Importing the Plot Package
-    #Pkg.add("DataFrame")     // Dataframe of 
+    #Pkg.add("DataFrame")     // Importing the Dataframe Package
     
 
 #Step 1.1.1: Fix Parameter Values
