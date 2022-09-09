@@ -35,29 +35,34 @@ plot(ln_Q, ln_P, seriestype = :scatter, title = "Log Price and Quantity", xlabel
 
 
 #Step 1.2.1.1: Report OLS Estimate of β_2
+using DataFrames
 simulated = DataFrame(ln_Q = ln_Q, ln_P = ln_P)
+using GLM
 ols = lm(@formula(ln_Q ~ ln_P), simulated)
 
-#Step 1.2.2.2: MoM
-#Assume Z has Normal (0,1), γ = .5
-using LinearAlgebra
+#Step 1.2.2.1: MoM Population
 
-#Do simulations
+g1 = ; #Based on our calculations
+g2 = ; #Based on our calculations
+
+#Step 1.2.2.2: MoM Simulation
+using LinearAlgebra #Assume Z has Normal (0,1), γ = .5
 num_s = 100
 g = zeros((100,2))
 γ = .5
 s_z = 1
-for i in 1:num_s
-    ln_Z = rand(Normal(0,1), 50)
-    ϵ_D = rand(Normal(0,1), 50)
-    s_a = s_S - γ^2*s_z
-    ln_a = rand(Normal(0,s_a), 50)
-    ϵ_a = γ*ln_Z + ln_a
-    ln_P = (1/(1+β_2*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
-    ln_Q = β_1 .- β_2*ln_P .+ ϵ_D
-    g[i,1] = dot(ln_Z, ln_Q) 
-    g[i,2] = dot(ln_Z, ln_P)
+for x = β_2
+    for i in 1:num_s
+        ln_Z = rand(Normal(0,1), 50)
+        ϵ_D = rand(Normal(0,1), 50)
+        s_a = s_S - γ^2*s_z
+        ln_a = rand(Normal(0,s_a), 50)
+        ϵ_a = γ*ln_Z + ln_a
+        ln_P = (1/(1+x*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
+        ln_Q = β_1 .- x*ln_P .+ ϵ_D
+        g[i,1] = dot(ln_Z, ln_Q) 
+        g[i,2] = dot(ln_Z, ln_P)
+    end
 end
-
 #Compute simulated moments
 sim_g = (1/num_s)*sum(g',dims=2)
