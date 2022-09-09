@@ -10,7 +10,7 @@
 β_1 = 0
 β_2 = 2
 δ = 0.2
-μ = 1 #Mistake in the Problem Set?
+μ = 1 
 s_D = 1 
 s_S = 1
 
@@ -63,6 +63,4 @@ for i in 1:num_s
 end
 
 #Compute simulated moments
-
-
 sim_g = (1/num_s)*sum(g',dims=2)
