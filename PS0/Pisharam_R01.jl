@@ -4,7 +4,7 @@
     #Pkg.add("Distributions") // Importing the Distributions Package
     #Pkg.add("Plots")         // Importing the Plot Package
     #Pkg.add("DataFrame")     // Importing the Dataframe Package
-    #Pkg.add("LinearAlgebra")
+    #Pkg.add("LinearAlgebra") // Importing the Linear LinearAlgebra Package
 
 #Step 1.1.1: Fix Parameter Values
 β_1 = 0
@@ -18,11 +18,8 @@ s_S = 1
 using Random, Distributions
 Random.seed!(123)   
 
-d_1 = Normal(0,s_D)
-d_2 = Normal(0,s_S)
-
-ϵ_D = rand(d_1,50)
-ϵ_a = rand(d_2,50)
+ϵ_D = rand(Normal(0,s_D),50)
+ϵ_a = rand(Normal(0,s_D),50)
 
 #Step 1.1.3: Generate Price Data
 ln_P = (1/(1+β_2*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
