@@ -6,6 +6,7 @@
     #Pkg.add("DataFrame")     // Importing the Dataframe Package
     #Pkg.add("LinearAlgebra") // Importing the Linear LinearAlgebra Package
     #Pkg.add("Optim")         // Importing the Optimization Package
+
 #Step 1.1.1: Fix Parameter Values
 β_1 = 0
 β_2 = 2
@@ -50,7 +51,7 @@ ols = lm(@formula(ln_Q ~ ln_P), simulated)
 #*****************************
 #Step 1.2.2.1: MoM Population
 #Set Parameter
-γ = .6 
+γ = .8 
 s_z = 1
 
 g1 = (β_2*γ^2*s_z)/(1+δ*β_2); #Based on our calculations
@@ -75,13 +76,13 @@ function sim_moments(x, γ, s_z,num_s,seed)
         ϵ_a = γ*ln_Z + ln_a
         ln_P = (1/(1+x*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
         ln_Q = β_1 .- x*ln_P .+ ϵ_D
-        g[i,1] = dot(ln_Z, ln_Q) 
-        g[i,2] = dot(ln_Z, ln_P)
+        g[i,1] = dot(ln_Z, ln_Q)/50 
+        g[i,2] = dot(ln_Z, ln_P)/50
     end
     sim_g = (1/num_s)*sum(g',dims=2)
     pop_g = [(x*γ^2*s_z)/(1+δ*x);(-1*γ*s_z)/(1+δ*x)]
-    err_g = pop_g - sim_g
-    return sim_g, err_g
+    err_g = sim_g - pop_g
+    return sim_g, pop_g, err_g
 end
 
 #Compute Empirical Moment
@@ -93,18 +94,18 @@ ln_a = rand(Normal(0,s_a), 50)
 ln_P = (1/(1+β_2*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
 ln_Q = β_1 .- β_2*ln_P .+ ϵ_D
 g = zeros(1,2)
-g[1,1] = dot(ln_Z, ln_Q) 
-g[1,2] = dot(ln_Z, ln_P)
+g[1,1] = dot(ln_Z, ln_Q)/50 
+g[1,2] = dot(ln_Z, ln_P)/50
 emp_g = sum(g',dims=2)
 
 #Step 1.2.2.4 Opitmize
 using Optim
 A(x) = [(x*γ^2*s_z)/(1+δ*x);(-1*γ*s_z)/(1+δ*x)]
 B = emp_g
-C(x) = sim_moments(x,0.8,1,100,123) 
+C(x) = sim_moments(x,0.8,1,100,123)[1] 
 
 obj_pop(x) = norm(A(x)-B)
 obj_sim(x) = norm(C(x)-B)
 
-optimize(obj_pop,[0.0])
-
+optimize(obj_pop,-5,5)
+optimize(obj_sim,-5,5)
