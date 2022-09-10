@@ -59,10 +59,14 @@ g2 = (-1*γ*s_z)/(1+δ*β_2); #Based on our calculations
 #Step 1.2.2.2: MoM Simulation
 using LinearAlgebra 
 
+<<<<<<< HEAD
 
 function sim_moments(x, γ, s_z, ln_Z, ϵ_D, ln_a)
     num_s = 100
     g = zeros((100,2))
+=======
+function sim_moments(β_2, γ, s_z)
+>>>>>>> parent of 1f31cde (Update Pisharam_R01.jl)
     β_1 = 0
     δ = 0.2
     μ = 1 
@@ -76,11 +80,15 @@ function sim_moments(x, γ, s_z, ln_Z, ϵ_D, ln_a)
         g[i,2] = dot(ln_Z, ln_P)
     end
     sim_g = (1/num_s)*sum(g',dims=2)
+<<<<<<< HEAD
     pop_g[1,1] = (β_2*γ^2*s_z)/(1+δ*β_2)
     pop_g[1,2] = (β_2*γ^2*s_z)/(1+δ*β_2)
     err_g = pop_g - sim_g
     return sim_g, err_g
 end
+=======
+    return sim_g
+>>>>>>> parent of 1f31cde (Update Pisharam_R01.jl)
 
 #Compute simulated moments
 
