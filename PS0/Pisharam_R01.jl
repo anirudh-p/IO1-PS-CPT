@@ -59,19 +59,14 @@ g2 = (-1*γ*s_z)/(1+δ*β_2); #Based on our calculations
 #Step 1.2.2.2: MoM Simulation
 using LinearAlgebra 
 
-<<<<<<< HEAD
-
-function sim_moments(x, γ, s_z)
-    num_s = 100
-    g = zeros((100,2))
-=======
-function sim_moments(β_2, γ, s_z)
->>>>>>> parent of 1f31cde (Update Pisharam_R01.jl)
+function sim_moments(x, γ, s_z,num_s,seed)
+    Random.seed!(seed)   #To ensure stability of values each time the function is called
     β_1 = 0
     δ = 0.2
     μ = 1 
     s_D = 1 
     s_S = 1
+    g = zeros(100,2)
     for i in 1:num_s
         ln_Z = rand(Normal(0,s_z), 50)
         s_a = s_S - γ^2*s_z
@@ -84,20 +79,32 @@ function sim_moments(β_2, γ, s_z)
         g[i,2] = dot(ln_Z, ln_P)
     end
     sim_g = (1/num_s)*sum(g',dims=2)
-<<<<<<< HEAD
-    pop_g[1,1] = (β_2*γ^2*s_z)/(1+δ*β_2)
-    pop_g[1,2] = (β_2*γ^2*s_z)/(1+δ*β_2)
+    pop_g = [(x*γ^2*s_z)/(1+δ*x);(-1*γ*s_z)/(1+δ*x)]
     err_g = pop_g - sim_g
     return sim_g, err_g
 end
-=======
-    return sim_g
->>>>>>> parent of 1f31cde (Update Pisharam_R01.jl)
 
-#Compute simulated moments
+#Compute Empirical Moment
+ln_Z = rand(Normal(0,s_z), 50)
+s_a = s_S - γ^2*s_z
+ϵ_D = rand(Normal(0,s_D), 50)
+ln_a = rand(Normal(0,s_a), 50)  
+ϵ_a = γ*ln_Z + ln_a
+ln_P = (1/(1+β_2*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
+ln_Q = β_1 .- β_2*ln_P .+ ϵ_D
+g = zeros(1,2)
+g[1,1] = dot(ln_Z, ln_Q) 
+g[1,2] = dot(ln_Z, ln_P)
+emp_g = sum(g',dims=2)
 
-#Step 1.2.2.4 
-γ = .8
-s_z = 1
+#Step 1.2.2.4 Opitmize
+using Optim
+A(x) = [(x*γ^2*s_z)/(1+δ*x);(-1*γ*s_z)/(1+δ*x)]
+B = emp_g
+C(x) = sim_moments(x,0.8,1,100,123) 
 
+obj_pop(x) = norm(A(x)-B)
+obj_sim(x) = norm(C(x)-B)
+
+optimize(obj_pop,[0.0])
 
