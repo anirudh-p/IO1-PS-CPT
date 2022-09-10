@@ -61,7 +61,7 @@ using LinearAlgebra
 num_s = 100
 g = zeros((100,2))
 
-function sim_moments(β_2, γ, s_z)
+function sim_moments(x, γ, s_z)
     β_1 = 0
     δ = 0.2
     μ = 1 
@@ -79,6 +79,10 @@ function sim_moments(β_2, γ, s_z)
         g[i,2] = dot(ln_Z, ln_P)
     end
     sim_g = (1/num_s)*sum(g',dims=2)
-    return sim_g
+    pop_g[1,1] = (β_2*γ^2*s_z)/(1+δ*β_2)
+    pop_g[1,2] = (β_2*γ^2*s_z)/(1+δ*β_2)
+    err_g = pop_g - sim_g
+    return sim_g 
+    return err_g
 
 #Compute simulated moments
