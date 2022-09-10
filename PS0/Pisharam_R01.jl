@@ -31,7 +31,14 @@ Q = exp.(ln_Q)
 
 #Step 1.1.5: Plot Empirical Distributions of P and Q
 using Plots
-plot(ln_Q, ln_P, seriestype = :scatter, title = "Log Price and Quantity", xlabel = "Log Quantity", ylabel = "Log Price")
+plot(
+ln_Q, ln_P, 
+seriestype = :scatter, title = "Log Price and Quantity", xlabel = "Log Quantity", ylabel = "Log Price")
+
+plot(
+histogram(ln_Q; bins=:sqrt, title = "Distribution of ln Q", ylabel = "Log Quantity"), 
+histogram(ln_P, bins=:sqrt, title = "Distribution of ln P", ylabel = "Log Price");
+layout=(2,1))
 
 
 #Step 1.2.1.1: Report OLS Estimate of β_2
@@ -40,17 +47,20 @@ simulated = DataFrame(ln_Q = ln_Q, ln_P = ln_P)
 using GLM
 ols = lm(@formula(ln_Q ~ ln_P), simulated)
 
+#*****************************
 #Step 1.2.2.1: MoM Population
+#Set Parameter
+γ = .6 
+s_z = 1
 
-g1 = ; #Based on our calculations
-g2 = ; #Based on our calculations
+g1 = (β_2*γ^2*s_z)/(1+δ*β_2); #Based on our calculations
+g2 = (-1*γ*s_z)/(1+δ*β_2); #Based on our calculations
 
 #Step 1.2.2.2: MoM Simulation
-using LinearAlgebra #Assume Z has Normal (0,1), γ = .5
+using LinearAlgebra 
 num_s = 100
 g = zeros((100,2))
-γ = .5
-s_z = 1
+
 for x = β_2
     for i in 1:num_s
         ln_Z = rand(Normal(0,1), 50)
