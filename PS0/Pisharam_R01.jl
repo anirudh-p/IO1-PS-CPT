@@ -60,7 +60,7 @@ g2 = (-1*γ*s_z)/(1+δ*β_2); #Based on our calculations
 using LinearAlgebra 
 
 
-function sim_moments(x, γ, s_z, ln_Z, ϵ_D, ln_a)
+function sim_moments(x, γ, s_z)
     num_s = 100
     g = zeros((100,2))
     β_1 = 0
@@ -69,6 +69,10 @@ function sim_moments(x, γ, s_z, ln_Z, ϵ_D, ln_a)
     s_D = 1 
     s_S = 1
     for i in 1:num_s
+        ln_Z = rand(Normal(0,s_z), 50)
+        s_a = s_S - γ^2*s_z
+        ϵ_D = rand(Normal(0,s_D), 50)
+        ln_a = rand(Normal(0,s_a), 50)  
         ϵ_a = γ*ln_Z + ln_a
         ln_P = (1/(1+x*δ))*(δ*β_1 .+ δ*ϵ_D .+ log(μ) .- ϵ_a)
         ln_Q = β_1 .- x*ln_P .+ ϵ_D
@@ -88,8 +92,4 @@ end
 γ = .8
 s_z = 1
 
-ln_Z = rand(Normal(0,s_z), 50)
-s_a = s_S - γ^2*s_z
-ϵ_D = rand(Normal(0,s_D), 50)
-ln_a = rand(Normal(0,s_a), 50)
 
