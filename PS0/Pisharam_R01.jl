@@ -86,6 +86,7 @@ function sim_moments(x, γ, s_z,num_s,seed)
 end
 
 #Compute Empirical Moment
+Random.seed!(123)
 ln_Z = rand(Normal(0,s_z), 50)
 s_a = s_S - γ^2*s_z
 ϵ_D = rand(Normal(0,s_D), 50)
@@ -100,9 +101,9 @@ emp_g = sum(g',dims=2)
 
 #Step 1.2.2.4 Opitmize
 using Optim
-A(x) = [(x*γ^2*s_z)/(1+δ*x);(-1*γ*s_z)/(1+δ*x)]
-B = emp_g
-C(x) = sim_moments(x,0.8,1,100,123)[1] 
+A(x) = [(x*γ^2*s_z)/(1+δ*x);(-1*γ*s_z)/(1+δ*x)] #Population Moment
+B = emp_g #Empirical Moment
+C(x) = sim_moments(x,0.8,1,100,123)[1] #Simulated Moment
 
 obj_pop(x) = norm(A(x)-B)
 obj_sim(x) = norm(C(x)-B)
