@@ -61,10 +61,15 @@ using LinearAlgebra
 num_s = 100
 g = zeros((100,2))
 
-for x = β_2
+function sim_moments(β_2, γ, s_z)
+    β_1 = 0
+    δ = 0.2
+    μ = 1 
+    s_D = 1 
+    s_S = 1
     for i in 1:num_s
-        ln_Z = rand(Normal(0,1), 50)
-        ϵ_D = rand(Normal(0,1), 50)
+        ln_Z = rand(Normal(0,s_z), 50)
+        ϵ_D = rand(Normal(0,s_D), 50)
         s_a = s_S - γ^2*s_z
         ln_a = rand(Normal(0,s_a), 50)
         ϵ_a = γ*ln_Z + ln_a
@@ -73,6 +78,7 @@ for x = β_2
         g[i,1] = dot(ln_Z, ln_Q) 
         g[i,2] = dot(ln_Z, ln_P)
     end
-end
+    sim_g = (1/num_s)*sum(g',dims=2)
+    return sim_g
+
 #Compute simulated moments
-sim_g = (1/num_s)*sum(g',dims=2)
