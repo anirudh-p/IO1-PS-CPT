@@ -72,11 +72,15 @@ function elasticity(p, X, β, α_i, ξ)
         s_3[m] = sum(prob[m,:,3])/1000   
     end
 
-    ϵ = ones(100,3)
+    ϵ = zeros(100,3)
 
     for j= 1:3
+        l=0
         for m=1:100
-            ϵ[m,j] = sum(α[i])
+            for i = 1:1000
+                ϵ[m,j] += α_i[l+i]*prob[m,i,j]*(1-prob[m,i,j])/1000
+            end
+            l = m*1000
         end
     end
 
@@ -84,17 +88,23 @@ function elasticity(p, X, β, α_i, ξ)
     return s,ϵ
 end
 
+MC = zeros(100,3)
 for j=1:3
     MC[:,j] = hcat(ones(100),W[:,j],Z[:,j],η[:,j])*vcat(γ,1)
 end
 
 p_guess=rand(Uniform(10,15),100,3)
 p = ones(100,3)
+count = 0
 
 while norm(p .- p_guess) > 0.00001 
     p_guess = p
     s,ϵ = elasticity(p_guess, X, β, α_i, ξ)
     p = MC./(ones(100,3) .+ 1 ./ϵ)
+    count +=1
+    if count > 1000
+        break
+    end
 end
 p
 
