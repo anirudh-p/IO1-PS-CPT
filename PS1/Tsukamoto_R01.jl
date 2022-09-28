@@ -56,16 +56,16 @@ p = ones(100,3)
 
 l=1
 for m=1:100
-    δ_1[m](p) = transpose(X[m,:,1])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,1] + ξ[m,1]
-    δ_2[m](p) = transpose(X[m,:,2])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,2] + ξ[m,2]
-    δ_3[m](p) = transpose(X[m,:,3])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,3] + ξ[m,3]
+    δ_1[m] = transpose(X[m,:,1])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,1] + ξ[m,1]
+    δ_2[m] = transpose(X[m,:,2])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,2] + ξ[m,2]
+    δ_3[m] = transpose(X[m,:,3])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,3] + ξ[m,3]
     l=l+1000
 end
 
-#s_0 = 1-s_1-s_2-s_3
-s_1 = (1-s_1-s_2-s_3)*exp(δ_1 - δ_0)
-s_2 = (1-s_1-s_2-s_3)*exp(δ_2 - δ_0)
-s_3 = (1-s_1-s_2-s_3)*exp(δ_3 - δ_0)
+s_0 = exp.(δ_0)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
+s_1 = exp.(δ_1)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
+s_2 = exp.(δ_2)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
+s_3 = exp.(δ_3)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
 
 s = hcat(s_1, s_2, s_3)
 
@@ -75,5 +75,5 @@ MC_3 = hcat(ones(100),W[:,3],Z[:,3],η[:,3])*vcat(γ,1)
 
 MC = hcat(MC_1, MC_2, MC_3)
 
-ϵ = 
-(p-MC)./p = -1/
+(p.-MC)./p = -1/
+
