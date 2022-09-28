@@ -48,38 +48,72 @@ d_3 = LogNormal(0,1)
 temp = rand(d_3,100000)
 α_i = α .+ temp.*σ_α
 
-function shares(p, X, β, α_i, ξ)
-    δ_0 = zeros(100)
-    δ_1 = zeros(100)
-    δ_2 = zeros(100)
-    δ_3 = zeros(100)
+function elasticity(p, X, β, α_i, ξ)
 
-    l=1
+    s_1 = zeros(100)
+    s_2 = zeros(100)
+    s_3 = zeros(100)
+
+    prob = zeros(100,1000,3)
+    l=0
     for m=1:100
-        δ_1[m] = transpose(X[m,:,1])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,1] + ξ[m,1]
-        δ_2[m] = transpose(X[m,:,2])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,2] + ξ[m,2]
-        δ_3[m] = transpose(X[m,:,3])*β -0.001*transpose(α_i[l:l+999])*ones(1000)*p[m,3] + ξ[m,3]
-        l=l+1000
+        for i=1:1000
+            delta1 = transpose(X[m,:,1])*β +ξ[m,1] + α_i[l+i]*p[m,1]
+            delta2 = transpose(X[m,:,2])*β +ξ[m,2] + α_i[l+i]*p[m,2]
+            delta3 = transpose(X[m,:,3])*β +ξ[m,3] + α_i[l+i]*p[m,3]
+
+            prob[m,i,1] = exp(delta1)/(1+exp(delta1)+exp(delta2)+exp(delta3))
+            prob[m,i,2] = exp(delta2)/(1+exp(delta1)+exp(delta2)+exp(delta3))
+            prob[m,i,3] = exp(delta3)/(1+exp(delta1)+exp(delta2)+exp(delta3))           
+        end
+        l=1000*m
+        s_1[m] = sum(prob[m,:,1])/1000
+        s_2[m] = sum(prob[m,:,2])/1000
+        s_3[m] = sum(prob[m,:,3])/1000   
     end
 
-    s_0 = exp.(δ_0)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
-    s_1 = exp.(δ_1)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
-    s_2 = exp.(δ_2)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
-    s_3 = exp.(δ_3)./(ones(100) .+ exp.(δ_1) .+ exp.(δ_2) .+ exp.(δ_3))
+    ϵ = ones(100,3)
+
+    for j= 1:3
+        for m=1:100
+            ϵ[m,j] = sum(α[i])
+        end
+    end
 
     s = hcat(s_1, s_2, s_3)
-    return s
+    return s,ϵ
 end
 
-p = rand(Uniform(0,1),100,3)
+for j=1:3
+    MC[:,j] = hcat(ones(100),W[:,j],Z[:,j],η[:,j])*vcat(γ,1)
+end
 
-s = shares(p, X, β, α_i, ξ)
+p_guess=rand(Uniform(10,15),100,3)
+p = ones(100,3)
 
-MC_1 = hcat(ones(100),W[:,1],Z[:,1],η[:,1])*vcat(γ,1) 
-MC_2 = hcat(ones(100),W[:,2],Z[:,2],η[:,2])*vcat(γ,1)
-MC_3 = hcat(ones(100),W[:,3],Z[:,3],η[:,3])*vcat(γ,1)
+while norm(p .- p_guess) > 0.00001 
+    p_guess = p
+    s,ϵ = elasticity(p_guess, X, β, α_i, ξ)
+    p = MC./(ones(100,3) .+ 1 ./ϵ)
+end
+p
 
-MC = hcat(MC_1, MC_2, MC_3)
+#********************
+#Step1 Demand Side
+#********************
 
-(p.-MC)./p = -1/
+#Guess Parameter Estimates (β_1,β_2,β_3,α,σ_α):
+guess = [4,1.5,2,1,0.8]
+
+#Step 1.2: Inversion to find δ from shares
+function contraction_map(s,δ)
+        while norm(δ_new - δ_guess) < 0.001
+            s_pred = exp()
+            δ_new = δ_guess + ln.(s) - ln.(s_pred)
+            
+            return δ_new
+        end
+
+#Step 1.3: Estimate the ξ from δ 
+ξ = X*β
 
