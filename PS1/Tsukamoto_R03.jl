@@ -41,7 +41,6 @@ Z = hcat(last(rand(d_2,1000),100),last(rand(d_2,1100),100),last(rand(d_2,1200),1
 γ = [2,1,1]
 
 #5.Derivation of prices and market share
-#Simulate α_i's
 
 function model_elasticity(p, X, β, α, σ_α, ξ, ν)
 
@@ -60,7 +59,7 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
             δ_2 = transpose(X[m,:,2])*β +ξ[m,2] + α*p[m,2]
             δ_3 = transpose(X[m,:,3])*β +ξ[m,3] + α*p[m,3]
 
-            μ_i = σ_α*p[m,1]*ν[i]
+            μ_i = σ_α*p[m,1]*ν[i+l]
 
             prob[m,i,1] = exp(δ_1+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
             prob[m,i,2] = exp(δ_2+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
@@ -74,11 +73,12 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
 
     ϵ = ones(100,3)
 
-    # for j= 1:3
-    #     for m=1:100
-    #         ϵ[m,j] = sum(α[i])
-    #     end
-    # end
+    q=0
+    for j= 1:3
+        for m=1:100
+            ϵ[m,j] = ν[q+1:] prob[m,:,j].*(1 -prob[m,:,j])
+        end
+    end
 
     s = hcat(s_1, s_2, s_3)
     return s,ϵ
@@ -96,7 +96,7 @@ p = ones(100,3)
 
 while norm(p .- p_guess) > 0.00001 
     p_guess = p
-    s,ϵ = elasticity(p_guess, X, β, α_i, ξ)
+    s,ϵ = function model_elasticity(p, X, β, α, σ_α, ξ, ν)
     p = MC./(ones(100,3) .+ 1 ./ϵ)
 end
 p
