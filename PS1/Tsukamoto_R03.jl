@@ -179,3 +179,22 @@ end
 #θ_guess = θ_new
 ξ_guess = back_ξ(s, p, guess, ν_sim)
 #θ_new = whatever function Ryo has to back θ from ξ
+
+ ##P1
+
+#2
+#(a) The moment condition and GMM
+## 6 moment conditions of characteristics
+g12 = transpose([ξ[:,1],ξ[:,1],ξ[:,1]]).*X[:,:,2]
+g13 = transpose([ξ[:,1],ξ[:,1],ξ[:,1]]).*X[:,:,3]
+g21 = transpose([ξ[:,2],ξ[:,2],ξ[:,2]]).*X[:,:,1]
+g23 = transpose([ξ[:,2],ξ[:,2],ξ[:,2]]).*X[:,:,3]
+g31 = transpose([ξ[:,3],ξ[:,3],ξ[:,3]]).*X[:,:,1]
+g32 = transpose([ξ[:,3],ξ[:,3],ξ[:,3]]).*X[:,:,2]
+## 2 moment conditions of common and market specific cost Shifters
+g1w = ξ[:,1].*W[:,1]
+g1z = ξ[:,1].*Z[:,1]
+g2w = ξ[:,1].*W[:,2]
+g2z = ξ[:,1].*Z[:,2]
+g3w = ξ[:,1].*W[:,3]
+g3z = ξ[:,1].*Z[:,3]
