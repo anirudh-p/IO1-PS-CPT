@@ -48,8 +48,6 @@ d_3 = LogNormal(0,1)
 temp = rand(d_3,100000)
 α_i = α .+ temp.*σ_α
 
-p = ones(100,3)
-
 function shares(p, X, β, α_i, ξ)
     δ_0 = zeros(100)
     δ_1 = zeros(100)
@@ -77,6 +75,9 @@ p = rand(Uniform(0,1),100,3)
 
 s = shares(p, X, β, α_i, ξ)
 
+D=Differential(p)
+
+mat = D(shares(p,X,β,α_i,ξ))
 
 MC_1 = hcat(ones(100),W[:,1],Z[:,1],η[:,1])*vcat(γ,1) 
 MC_2 = hcat(ones(100),W[:,2],Z[:,2],η[:,2])*vcat(γ,1)
