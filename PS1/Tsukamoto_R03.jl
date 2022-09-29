@@ -74,10 +74,12 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
     ϵ = ones(100,3)
 
     q=0
-    for j= 1:3
-        for m=1:100
-            ϵ[m,j] = ν[q+1:] prob[m,:,j].*(1 -prob[m,:,j])
-        end
+    for m=1:100
+        α_i = σ_α*ν[q+1:q+1000]
+        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/1000
+        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/1000
+        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/1000
+        q=1000*m
     end
 
     s = hcat(s_1, s_2, s_3)
@@ -94,9 +96,9 @@ end
 p_guess=rand(Uniform(10,15),100,3)
 p = ones(100,3)
 
-while norm(p .- p_guess) > 0.00001 
+while norm(p - p_guess) > 0.00001 
     p_guess = p
-    s,ϵ = function model_elasticity(p, X, β, α, σ_α, ξ, ν)
+    s,ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
     p = MC./(ones(100,3) .+ 1 ./ϵ)
 end
 p
