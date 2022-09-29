@@ -11,9 +11,7 @@ Random.seed!(123)
 d_1 = Uniform(0,1)
 d_2 = Normal(0,1)
 
-#0.1: Product Characteristics
-#X is a tensor of product Characteristics across Market * Characteristic * Firm
-
+#0.1: Product Characteristics (X is a tensor of product Characteristics across Market * Characteristic * Firm)
 x_2 = rand(d_1,300) #Uniform [0,1]
 x_3 = rand(d_2,300) #Normal(0,1)
 X = zeros(100,3,3)
