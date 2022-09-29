@@ -30,7 +30,7 @@ end
 ξ = hcat(last(rand(d_2,400),100),last(rand(d_2,500),100),last(rand(d_2,600),100)) #First 300 Draws used up for Product Characteristics (Seed Set)
 
 #0.3: Cost Shifters
-W = hcat(last(rand(d_2,700),100),last(rand(d_2,800),100),last(rand(d_2,900),100)) #First 600 Draws used up (Seed Set)
+W = reshape(repeat(vcat(last(rand(d_2,700),3)),100),3,100)' #First 600 Draws used up (Seed Set)
 Z = hcat(last(rand(d_2,1000),100),last(rand(d_2,1100),100),last(rand(d_2,1200),100)) 
 η = hcat(last(rand(d_2,1300),100),last(rand(d_2,1400),100),last(rand(d_2,1500),100)) 
 
@@ -99,7 +99,11 @@ p = ones(100,3)
 while norm(p - p_guess) > 0.00001 
     p_guess = p
     s,ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
-    p = MC./(ones(100,3) .+ 1 ./ϵ)
+    for m = 1:100
+        p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
+        p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
+        p[m,3] = MC[m,3] / (ones(100,3) .+ 1 ./ϵ)[m,3]
+    end
 end
 p
 
