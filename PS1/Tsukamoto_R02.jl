@@ -32,7 +32,7 @@ end
 ξ = hcat(last(rand(d_2,400),100),last(rand(d_2,500),100),last(rand(d_2,600),100)) #First 300 Draws used up for Product Characteristics (Seed Set)
 
 #0.3: Cost Shifters
-W = hcat(last(rand(d_2,700),100),last(rand(d_2,800),100),last(rand(d_2,900),100)) #First 600 Draws used up (Seed Set)
+W = reshape(repeat(vcat(last(rand(d_2,700),3)),100),3,100)' #First 600 Draws used up (Seed Set)
 Z = hcat(last(rand(d_2,1000),100),last(rand(d_2,1100),100),last(rand(d_2,1200),100)) 
 η = hcat(last(rand(d_2,1300),100),last(rand(d_2,1400),100),last(rand(d_2,1500),100)) 
 
@@ -93,7 +93,11 @@ p = ones(100,3)
 while norm(p .- p_guess) > 0.00001 
     p_guess = p
     s,ϵ = elasticity(p, X, β, α_i, ξ)
-    p = MC./(ones(100,3) .+ 1 ./ϵ)
+    for m = 1:100
+        p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
+        p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
+        p[m,3] = MC[m,3] / (ones(100,3) .+ 1 ./ϵ)[m,3]
+    end
 end
 p
 
@@ -138,6 +142,19 @@ function contraction_map(s,p)
         end
     end
 
+# For us δ = Xβ - α_i*p + ξ, so δ_new - δ_guess comes down to our choice of p
+function contraction_map(s, θ_guess, X, p_guess, ξ)
+    temp = rand(d_3,100000)
+    α_i = θ_guess[4] .+ temp.*θ_guess[5]    
+    while norm(δ_new - δ_guess) > 0.001        
+        s_pred, ϵ = elasticity(p_guess, X, θ_guess[1:3], α_i, ξ)
+        δ_new = δ_guess + ln.(s) - ln.(s_pred)
+        if norm(δ_new - δ_guess > 0.001)
+            p_guess = p_new
+        end
+    end
+    return δ_new
+    end
 #Step 1.3: Estimate the ξ from δ 
 ξ = X*β
 
