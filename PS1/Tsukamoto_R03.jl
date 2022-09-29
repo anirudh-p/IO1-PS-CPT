@@ -174,8 +174,8 @@ function back_ξ(s, p, guess, ν)
     return ξ
 end
 
-while norm(θ_new - θ_guess) > 1
-    θ_guess = θ_new
-    ξ_guess = back_ξ(s, p, guess, ν_sim)
-    #θ_new = whatever function Ryo has to back θ from ξ
-end
+#θ_new = guess
+##θ_guess = zeros(5)
+#θ_guess = θ_new
+ξ_guess = back_ξ(s, p, guess, ν_sim)
+#θ_new = whatever function Ryo has to back θ from ξ
