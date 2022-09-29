@@ -2,7 +2,7 @@ using Pkg
 using Random
 using Distributions
 using LinearAlgebra 
-using Symbolics
+#using Symbolics
 
 #********************
 #Step0 Simulate Data
@@ -12,7 +12,7 @@ d_1 = Uniform(0,1)
 d_2 = Normal(0,1)
 
 #0.1: Product Characteristics
-#X is a tensor of product Characteristics across Market*Characteristic*Firm
+#X is a tensor of product Characteristics across Market * Characteristic * Firm
 
 x_2 = rand(d_1,300) #Uniform [0,1]
 x_3 = rand(d_2,300) #Normal(0,1)
@@ -45,16 +45,14 @@ Z = hcat(last(rand(d_2,1000),100),last(rand(d_2,1100),100),last(rand(d_2,1200),1
 #5.Derivation of prices and market share
 #Simulate α_i's
 d_3 = LogNormal(0,1)
-temp = rand(d_3,100000)
-α_i = α .+ temp.*σ_α
+ν = rand(d_3,100000)
+α_i = α .+ ν.*σ_α
 
 function elasticity(p, X, β, α_i, ξ)
 
-    s_1 = zeros(100)
-    s_2 = zeros(100)
-    s_3 = zeros(100)
-
+    s = zeros(100,3)
     prob = zeros(100,1000,3)
+
     l=0
     for m=1:100
         for i=1:1000
@@ -67,44 +65,35 @@ function elasticity(p, X, β, α_i, ξ)
             prob[m,i,3] = exp(delta3)/(1+exp(delta1)+exp(delta2)+exp(delta3))           
         end
         l=1000*m
-        s_1[m] = sum(prob[m,:,1])/1000
-        s_2[m] = sum(prob[m,:,2])/1000
-        s_3[m] = sum(prob[m,:,3])/1000   
+        s[m,1] = sum(prob[m,:,1])/1000
+        s[m,2] = sum(prob[m,:,2])/1000
+        s[m,3] = sum(prob[m,:,3])/1000   
     end
 
-    ϵ = zeros(100,3)
+    ϵ = ones(100,3)
 
     for j= 1:3
-        l=0
         for m=1:100
-            for i = 1:1000
-                ϵ[m,j] += α_i[l+i]*prob[m,i,j]*(1-prob[m,i,j])/1000
-            end
-            l = m*1000
+            ϵ[m,j] = sum(α[i])
         end
     end
 
-    s = hcat(s_1, s_2, s_3)
     return s,ϵ
 end
 
-MC = zeros(100,3)
+# MC from the supply side 
 for j=1:3
     MC[:,j] = hcat(ones(100),W[:,j],Z[:,j],η[:,j])*vcat(γ,1)
 end
 
+# Equilibrium Prices
 p_guess=rand(Uniform(10,15),100,3)
 p = ones(100,3)
-count = 0
 
 while norm(p .- p_guess) > 0.00001 
     p_guess = p
     s,ϵ = elasticity(p_guess, X, β, α_i, ξ)
     p = MC./(ones(100,3) .+ 1 ./ϵ)
-    count +=1
-    if count > 1000
-        break
-    end
 end
 p
 
@@ -116,13 +105,38 @@ p
 guess = [4,1.5,2,1,0.8]
 
 #Step 1.2: Inversion to find δ from shares
-function contraction_map(s,δ)
-        while norm(δ_new - δ_guess) < 0.001
-            s_pred = exp()
-            δ_new = δ_guess + ln.(s) - ln.(s_pred)
-            
-            return δ_new
+function share_prediction(δ, p)
+
+    d_3 = LogNormal(0,1)
+    ν = rand(d_3,100000)
+
+    s = zeros(100,3)
+
+    prob = zeros(100,1000,3)
+    l=0
+    for m=1:100
+        for i=1:1000
+            μ_i = σ_α*p[m,1]*ν[i+l]
+
+            prob[m,i,1] = exp(δ[m,1]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))     
+            prob[m,i,2] = exp(δ[m,2]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))     
+            prob[m,i,3] = exp(δ[m,3]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))           
         end
+        s[m,1] = sum(prob[m,:,1])/1000
+        s[m,2] = sum(prob[m,:,2])/1000
+        s[m,3] = sum(prob[m,:,3])/1000  
+        l=1000*m
+    end
+    return s
+end
+    
+function contraction_map(s,p)
+        while norm(δ_new - δ_guess) < 100
+            δ_guess = δ_new
+            s_pred = share_prediction(δ_guess,p)
+            δ_new = δ_guess + ln.(s) - ln.(s_pred)
+        end
+    end
 
 #Step 1.3: Estimate the ξ from δ 
 ξ = X*β
