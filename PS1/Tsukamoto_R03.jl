@@ -42,10 +42,11 @@ Z = hcat(last(rand(d_2,1000),100),last(rand(d_2,1100),100),last(rand(d_2,1200),1
 
 #5.Derivation of prices and market share
 
+d_3 = LogNormal(0,1)
+ν = rand(d_3,100000)
+
 function model_elasticity(p, X, β, α, σ_α, ξ, ν)
 
-    d_3 = LogNormal(0,1)
-    ν = rand(d_3,100000)
 
     s_1 = zeros(100)
     s_2 = zeros(100)
@@ -95,6 +96,8 @@ end
 #Equilibrium Prices 
 p_guess=rand(Uniform(10,15),100,3)
 p = ones(100,3)
+s = zeros(100,3)
+ϵ = zeros(100,3)
 
 while norm(p - p_guess) > 0.00001 
     p_guess = p
@@ -113,12 +116,12 @@ p
 
 #Guess Parameter Estimates (β_1,β_2,β_3,α,σ_α):
 guess = [4,1.5,2,1,0.8]
+d_3 = LogNormal(0,1)
+ν_sim = rand(d_3,100000)
+
 
 #Step 1.2: Inversion to find δ from shares
-function share_prediction(δ, p)
-
-    d_3 = LogNormal(0,1)
-    ν = rand(d_3,100000)
+function share_prediction(δ, p, θ, ν)
 
     s = zeros(100,3)
 
@@ -126,7 +129,7 @@ function share_prediction(δ, p)
     l=0
     for m=1:100
         for i=1:1000
-            μ_i = σ_α*p[m,1]*ν[i+l]
+            μ_i = θ[5]*p[m,1]*ν[i+l]
 
             prob[m,i,1] = exp(δ[m,1]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))     
             prob[m,i,2] = exp(δ[m,2]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))     
@@ -140,15 +143,39 @@ function share_prediction(δ, p)
     return s
 end
     
-function contraction_map(s,p)
-        while norm(δ_new - δ_guess) < 100
-            δ_guess = δ_new
-            s_pred = share_prediction(δ_guess,p)
-            δ_new = δ_guess + ln.(s) - ln.(s_pred)
-        end
+function contraction_map(s, p, δ_new, θ, ν)
+    count = 0
+    δ_guess = zeros(100,3)
+    while norm(δ_new - δ_guess) > 1
+        δ_guess = δ_new
+        s_pred = share_prediction(δ_guess,p, θ, ν)
+        δ_new = δ_guess + log.(s) - log.(s_pred)
+        count += 1
+        print(count)
+        print(δ_new)
     end
+    return δ_new
+end
 
-#Step 1.3: Estimate the ξ from δ 
-ξ = X*β
+function back_ξ(s, p, guess, ν)
+    δ = contraction_map(s, p, rand(100,3), guess, ν)
 
+    #Step 1.3: Estimate the ξ from δ 
+    agg_ν = zeros(100,1)
+    q = 0
+    for m = 1:100
+        agg_ν[m] = sum(ν[q+1:q+1000])/1000
+        q = m*1000
+    end
+    agg_ν
+    diagm(vec(agg_ν))
 
+    ξ = δ - X[:,1,:].*guess[1] + X[:,2,:].*guess[2] + X[:,3,:].*guess[3] + guess[4]*p + guess[5]*diagm(vec(agg_ν))*p
+    return ξ
+end
+
+#θ_new = guess
+##θ_guess = zeros(5)
+#θ_guess = θ_new
+ξ_guess = back_ξ(s, p, guess, ν_sim)
+#θ_new = whatever function Ryo has to back θ from ξ
