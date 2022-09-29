@@ -93,7 +93,11 @@ p = ones(100,3)
 while norm(p .- p_guess) > 0.00001 
     p_guess = p
     s,ϵ = elasticity(p, X, β, α_i, ξ)
-    p = MC./(ones(100,3) .+ 1 ./ϵ)
+    for m = 1:100
+        p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
+        p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
+        p[m,3] = MC[m,3] / (ones(100,3) .+ 1 ./ϵ)[m,3]
+    end
 end
 p
 
