@@ -2,6 +2,7 @@ using Pkg
 using Random
 using Distributions
 using LinearAlgebra 
+using Optim
 #using Symbolics
 
 #********************
@@ -151,8 +152,6 @@ function contraction_map(s, p, δ_new, θ, ν)
         s_pred = share_prediction(δ_guess,p, θ, ν)
         δ_new = δ_guess + log.(s) - log.(s_pred)
         count += 1
-        print(count)
-        print(δ_new)
     end
     return δ_new
 end
