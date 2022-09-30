@@ -2,6 +2,7 @@ using Pkg
 using Random
 using Distributions
 using LinearAlgebra 
+using Optim
 #using Symbolics
 
 #********************
@@ -151,8 +152,6 @@ function contraction_map(s, p, δ_new, θ, ν)
         s_pred = share_prediction(δ_guess,p, θ, ν)
         δ_new = δ_guess + log.(s) - log.(s_pred)
         count += 1
-        print(count)
-        print(δ_new)
     end
     return δ_new
 end
@@ -184,17 +183,40 @@ end
 
 #2
 #(a) The moment condition and GMM
-## 6 moment conditions of characteristics
-g12 = transpose([ξ[:,1],ξ[:,1],ξ[:,1]]).*X[:,:,2]
-g13 = transpose([ξ[:,1],ξ[:,1],ξ[:,1]]).*X[:,:,3]
-g21 = transpose([ξ[:,2],ξ[:,2],ξ[:,2]]).*X[:,:,1]
-g23 = transpose([ξ[:,2],ξ[:,2],ξ[:,2]]).*X[:,:,3]
-g31 = transpose([ξ[:,3],ξ[:,3],ξ[:,3]]).*X[:,:,1]
-g32 = transpose([ξ[:,3],ξ[:,3],ξ[:,3]]).*X[:,:,2]
-## 2 moment conditions of common and market specific cost Shifters
-g1w = ξ[:,1].*W[:,1]
-g1z = ξ[:,1].*Z[:,1]
-g2w = ξ[:,1].*W[:,2]
-g2z = ξ[:,1].*Z[:,2]
-g3w = ξ[:,1].*W[:,3]
-g3z = ξ[:,1].*Z[:,3]
+
+
+
+
+function g_demand(s, p, θ, ν)
+    ξ = back_ξ(s, p, θ, ν)
+    ## 6 moment conditions of characteristics
+    g12 = transpose(X[:,:,2])*reshape(ξ[:,1], 100, 1) ./100
+    g13 = transpose(X[:,:,3])*reshape(ξ[:,1], 100, 1) ./100
+    g21 = transpose(X[:,:,1])*reshape(ξ[:,2], 100, 1)./100
+    g23 = transpose(X[:,:,3])*reshape(ξ[:,2], 100, 1)./100
+    g31 = transpose(X[:,:,1])*reshape(ξ[:,3], 100, 1)./100
+    g32 = transpose(X[:,:,2])*reshape(ξ[:,3], 100, 1)./100
+
+    ## 2 moment conditions of common and market specific cost Shifters
+    g1w = transpose(W[:,1])*ξ[:,1] ./100
+    g1z = transpose(Z[:,1])*ξ[:,1] ./100
+    g2w = transpose(W[:,2])*ξ[:,2] ./100
+    g2z = transpose(Z[:,2])*ξ[:,2] ./100
+    g3w = transpose(W[:,3])*ξ[:,3] ./100
+    g3z = transpose(Z[:,3])*ξ[:,3] ./100
+
+    gd = (1/6)*(g12 .+ g13 .+ g21 .+ g23 .+ g31 .+ g32)
+    gs = (1/6)*(g1w + g1z + g2w + g2z + g3w + g3z)
+    g = zeros(4,1)
+    g[1:3, 1] = gd
+    g[4,1] = gs
+
+    return g
+end
+
+g_sim(θ) = transpose(g_demand(s, p, θ, ν_sim))*g_demand(s, p, θ, ν_sim)
+g_sim(guess)
+
+θ_gmm_sim = optimize(θ->g_sim(θ)[1,1], guess)
+
+
