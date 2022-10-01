@@ -94,6 +94,10 @@ for j=1:3
     MC[:,j] = hcat(ones(100),W[:,j],Z[:,j],η[:,j])*vcat(γ,1)
 end
 
+#set negative values to 0
+zero = zeros(100,3)
+MC = max.(MC, zero)
+
 #Equilibrium Prices 
 p_guess=rand(Uniform(10,15),100,3)
 p = ones(100,3)
@@ -101,8 +105,8 @@ s = zeros(100,3)
 ϵ = zeros(100,3)
 
 while norm(p - p_guess) > 0.00001 
-    global p_guess = p
-    global s, global ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
+    p_guess = p
+    s, ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
     for m = 1:100
         p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
         p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
@@ -145,13 +149,11 @@ function share_prediction(δ, p, θ, ν)
 end
     
 function contraction_map(s, p, δ_new, θ, ν)
-    count = 0
     δ_guess = zeros(100,3)
     while norm(δ_new - δ_guess) > 1
         δ_guess = δ_new
         s_pred = share_prediction(δ_guess,p, θ, ν)
         δ_new = δ_guess + log.(s) - log.(s_pred)
-        count += 1
     end
     return δ_new
 end
@@ -169,7 +171,7 @@ function back_ξ(s, p, guess, ν)
     agg_ν
     diagm(vec(agg_ν))
 
-    ξ = δ - X[:,1,:].*guess[1] + X[:,2,:].*guess[2] + X[:,3,:].*guess[3] + guess[4]*p + guess[5]*diagm(vec(agg_ν))*p
+    ξ = δ - X[:,1,:].*guess[1] - X[:,2,:].*guess[2] - X[:,3,:].*guess[3] + guess[4]*p + guess[5]*diagm(vec(agg_ν))*p
     return ξ
 end
 
@@ -182,32 +184,32 @@ end
 function g_demand_id(s, p, θ, ν)
     ξ = back_ξ(s, p, θ, ν)
     ## 3 moment conditions of characteristics
-    g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g123 = (transpose(X[:,3,2])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g131 = (transpose(X[:,1,3])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g132 = (transpose(X[:,2,3])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g133 = (transpose(X[:,3,3])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g211 = (transpose(X[:,1,1])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g212 = (transpose(X[:,2,1])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g213 = (transpose(X[:,3,1])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g231 = (transpose(X[:,1,3])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g232 = (transpose(X[:,2,3])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g233 = (transpose(X[:,3,3])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g311 = (transpose(X[:,1,1])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g312 = (transpose(X[:,2,1])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g313 = (transpose(X[:,3,1])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g321 = (transpose(X[:,1,2])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g322 = (transpose(X[:,2,2])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g323 = (transpose(X[:,3,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] /100
+    g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] /100
+    g123 = (transpose(X[:,3,2])*reshape(ξ[:,1], 100, 1))[1] /100
+    g131 = (transpose(X[:,1,3])*reshape(ξ[:,1], 100, 1))[1] /100
+    g132 = (transpose(X[:,2,3])*reshape(ξ[:,1], 100, 1))[1] /100
+    g133 = (transpose(X[:,3,3])*reshape(ξ[:,1], 100, 1))[1] /100
+    g211 = (transpose(X[:,1,1])*reshape(ξ[:,2], 100, 1))[1] /100
+    g212 = (transpose(X[:,2,1])*reshape(ξ[:,2], 100, 1))[1] /100
+    g213 = (transpose(X[:,3,1])*reshape(ξ[:,2], 100, 1))[1] /100
+    g231 = (transpose(X[:,1,3])*reshape(ξ[:,2], 100, 1))[1] /100
+    g232 = (transpose(X[:,2,3])*reshape(ξ[:,2], 100, 1))[1] /100
+    g233 = (transpose(X[:,3,3])*reshape(ξ[:,2], 100, 1))[1] /100
+    g311 = (transpose(X[:,1,1])*reshape(ξ[:,3], 100, 1))[1] /100
+    g312 = (transpose(X[:,2,1])*reshape(ξ[:,3], 100, 1))[1] /100
+    g313 = (transpose(X[:,3,1])*reshape(ξ[:,3], 100, 1))[1] /100
+    g321 = (transpose(X[:,1,2])*reshape(ξ[:,3], 100, 1))[1] /100
+    g322 = (transpose(X[:,2,2])*reshape(ξ[:,3], 100, 1))[1] /100
+    g323 = (transpose(X[:,3,2])*reshape(ξ[:,3], 100, 1))[1] /100
 
     ## 6 moment conditions of common and market specific cost Shifters
-    g1w = transpose(W[:,1])*ξ[:,1] ./100
-    g1z = transpose(Z[:,1])*ξ[:,1] ./100
-    g2w = transpose(W[:,2])*ξ[:,2] ./100
-    g2z = transpose(Z[:,2])*ξ[:,2] ./100
-    g3w = transpose(W[:,3])*ξ[:,3] ./100
-    g3z = transpose(Z[:,3])*ξ[:,3] ./100
+    g1w = transpose(W[:,1])*ξ[:,1] /100
+    g1z = transpose(Z[:,1])*ξ[:,1] /100
+    g2w = transpose(W[:,2])*ξ[:,2] /100
+    g2z = transpose(Z[:,2])*ξ[:,2] /100
+    g3w = transpose(W[:,3])*ξ[:,3] /100
+    g3z = transpose(Z[:,3])*ξ[:,3] /100
 
     g1 = (1/6)*(g121 + g122 + g123 + g131 + g132 + g133)
     g2 = (1/6)*(g211 + g212 + g213 + g231 + g232 + g233)
@@ -215,7 +217,7 @@ function g_demand_id(s, p, θ, ν)
     gw = (1/3)*(g1w + g2w + g3w)
     gz = (1/3)*(g1z + g2z + g3z)
 
-    g = [g1, g2, g3, gw, gz]
+    g = (1/3).*[g1, g2, g3, gw, gz]
 
     return g
 end
@@ -225,35 +227,35 @@ end
 function g_demand_over(s, p, θ, ν)
     ξ = back_ξ(s, p, θ, ν)
     ## 18 moment conditions of characteristics
-    g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g123 = (transpose(X[:,3,2])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g131 = (transpose(X[:,1,3])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g132 = (transpose(X[:,2,3])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g133 = (transpose(X[:,3,3])*reshape(ξ[:,1], 100, 1))[1] ./100
-    g211 = (transpose(X[:,1,1])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g212 = (transpose(X[:,2,1])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g213 = (transpose(X[:,3,1])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g231 = (transpose(X[:,1,3])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g232 = (transpose(X[:,2,3])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g233 = (transpose(X[:,3,3])*reshape(ξ[:,2], 100, 1))[1] ./100
-    g311 = (transpose(X[:,1,1])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g312 = (transpose(X[:,2,1])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g313 = (transpose(X[:,3,1])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g321 = (transpose(X[:,1,2])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g322 = (transpose(X[:,2,2])*reshape(ξ[:,3], 100, 1))[1] ./100
-    g323 = (transpose(X[:,3,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] /100
+    g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] /100
+    g123 = (transpose(X[:,3,2])*reshape(ξ[:,1], 100, 1))[1] /100
+    g131 = (transpose(X[:,1,3])*reshape(ξ[:,1], 100, 1))[1] /100
+    g132 = (transpose(X[:,2,3])*reshape(ξ[:,1], 100, 1))[1] /100
+    g133 = (transpose(X[:,3,3])*reshape(ξ[:,1], 100, 1))[1] /100
+    g211 = (transpose(X[:,1,1])*reshape(ξ[:,2], 100, 1))[1] /100
+    g212 = (transpose(X[:,2,1])*reshape(ξ[:,2], 100, 1))[1] /100
+    g213 = (transpose(X[:,3,1])*reshape(ξ[:,2], 100, 1))[1] /100
+    g231 = (transpose(X[:,1,3])*reshape(ξ[:,2], 100, 1))[1] /100
+    g232 = (transpose(X[:,2,3])*reshape(ξ[:,2], 100, 1))[1] /100
+    g233 = (transpose(X[:,3,3])*reshape(ξ[:,2], 100, 1))[1] /100
+    g311 = (transpose(X[:,1,1])*reshape(ξ[:,3], 100, 1))[1] /100
+    g312 = (transpose(X[:,2,1])*reshape(ξ[:,3], 100, 1))[1] /100
+    g313 = (transpose(X[:,3,1])*reshape(ξ[:,3], 100, 1))[1] /100
+    g321 = (transpose(X[:,1,2])*reshape(ξ[:,3], 100, 1))[1] /100
+    g322 = (transpose(X[:,2,2])*reshape(ξ[:,3], 100, 1))[1] /100
+    g323 = (transpose(X[:,3,2])*reshape(ξ[:,3], 100, 1))[1] /100
 
     ## 6 moment conditions of common and market specific cost Shifters
-    g1w = transpose(W[:,1])*ξ[:,1] ./100
-    g1z = transpose(Z[:,1])*ξ[:,1] ./100
-    g2w = transpose(W[:,2])*ξ[:,2] ./100
-    g2z = transpose(Z[:,2])*ξ[:,2] ./100
-    g3w = transpose(W[:,3])*ξ[:,3] ./100
-    g3z = transpose(Z[:,3])*ξ[:,3] ./100
+    g1w = transpose(W[:,1])*ξ[:,1] /100
+    g1z = transpose(Z[:,1])*ξ[:,1] /100
+    g2w = transpose(W[:,2])*ξ[:,2] /100
+    g2z = transpose(Z[:,2])*ξ[:,2] /100
+    g3w = transpose(W[:,3])*ξ[:,3] /100
+    g3z = transpose(Z[:,3])*ξ[:,3] /100
 
 
-    g = [g121, g122, g123, g131, g132, g133, g211, g212, g213, g231, g232, g233, g311, g312, g313, g321, g322, g323, g1w, g1z, g2w, g2z, g3w, g3z]
+    g = (1/3).*[g121, g122, g123, g131, g132, g133, g211, g212, g213, g231, g232, g233, g311, g312, g313, g321, g322, g323, g1w, g1z, g2w, g2z, g3w, g3z]
 
     return g
 end
