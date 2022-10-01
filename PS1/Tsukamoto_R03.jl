@@ -164,7 +164,8 @@ end
 #δ_test = contraction_map(s, p, rand(100,3), guess, ν_sim)
 
 function back_ξ(X, s, p, guess, ν)
-    δ_guess = X[:,1,:]*guess[1] + X[:,2,:]*guess[2] + X[:,3,:]*guess[3] - guess[4]*p
+    #δ_guess = X[:,1,:]*guess[1] + X[:,2,:]*guess[2] + X[:,3,:]*guess[3] - guess[4]*p
+    δ_guess = rand(100,3)
     δ = contraction_map(s, p, δ_guess, guess, ν)
 
     #Step 1.3: Estimate the ξ from δ 
@@ -295,7 +296,7 @@ end
 g_id(θ) = transpose(g_demand_id(X, W, Z, s, p, θ, ν_sim))*g_demand_id(X, W, Z, s, p, θ, ν_sim)
 g_id(guess)
 
-gmm_id = optimize(θ->g_id(θ), guess)
+gmm_id = optimize(θ->g_id(θ), guess, Optim.Options(iterations=2000))
 θ_id = Optim.minimizer(gmm_id)
 
 g_over(θ) = transpose(g_demand_over(X, W, Z, s, p, θ, ν_sim))*g_demand_over(X, W, Z, s, p, θ, ν_sim)
@@ -305,5 +306,5 @@ gmm_over = optimize(θ->g_over(θ), guess)
 
 ##P2
 #1a
-Δ_pc = zeros(3,3)
-Δ_oli = identity(3,3)
+
+
