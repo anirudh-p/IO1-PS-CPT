@@ -113,7 +113,7 @@ while norm(p - p_guess) > 0.00001
         p[m,3] = MC[m,3] / (ones(100,3) .+ 1 ./ϵ)[m,3]
     end
 end
-p
+#p
 
 #********************
 #Step1 Demand Side
@@ -148,9 +148,12 @@ function share_prediction(δ, p, θ, ν)
     return s
 end
     
+#δ_guess = X[:,1,:]*5 + X[:,2,:] + X[:,3,:] - p
+#s_guess = share_prediction(δ_guess, p, real, ν_sim)
+
 function contraction_map(s, p, δ_new, θ, ν)
     δ_guess = zeros(100,3)
-    while norm(δ_new - δ_guess) > 1
+    while norm(δ_new - δ_guess) > .01
         δ_guess = δ_new
         s_pred = share_prediction(δ_guess,p, θ, ν)
         δ_new = δ_guess + log.(s) - log.(s_pred)
@@ -158,8 +161,11 @@ function contraction_map(s, p, δ_new, θ, ν)
     return δ_new
 end
 
-function back_ξ(s, p, guess, ν)
-    δ = contraction_map(s, p, rand(100,3), guess, ν)
+#δ_test = contraction_map(s, p, rand(100,3), guess, ν_sim)
+
+function back_ξ(X, s, p, guess, ν)
+    δ_guess = X[:,1,:]*guess[1] + X[:,2,:]*guess[2] + X[:,3,:]*guess[3] - guess[4]*p
+    δ = contraction_map(s, p, δ_guess, guess, ν)
 
     #Step 1.3: Estimate the ξ from δ 
     agg_ν = zeros(100,1)
@@ -175,14 +181,14 @@ function back_ξ(s, p, guess, ν)
     return ξ
 end
 
-
-ξ_guess = back_ξ(s, p, guess, ν_sim)
+#real = [5, 1, 1, 1, 1]
+#ξ_guess = back_ξ(X, s, p, guess, ν_sim)
 
 #2
 #(a) The moment condition and GMM
 
-function g_demand_id(s, p, θ, ν)
-    ξ = back_ξ(s, p, θ, ν)
+function g_demand_id(X, W, Z, s, p, θ, ν)
+    ξ = back_ξ(X, s, p, θ, ν)
     ## 3 moment conditions of characteristics
     g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] /100
     g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] /100
@@ -224,8 +230,8 @@ end
 
 
 
-function g_demand_over(s, p, θ, ν)
-    ξ = back_ξ(s, p, θ, ν)
+function g_demand_over(X, W, Z, s, p, θ, ν)
+    ξ = back_ξ(X, s, p, θ, ν)
     ## 18 moment conditions of characteristics
     g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] /100
     g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] /100
@@ -260,13 +266,13 @@ function g_demand_over(s, p, θ, ν)
     return g
 end
 
-g_id(θ) = transpose(g_demand_id(s, p, θ, ν_sim))*g_demand_id(s, p, θ, ν_sim)
+g_id(θ) = transpose(g_demand_id(X, W, Z, s, p, θ, ν_sim))*g_demand_id(X, W, Z, s, p, θ, ν_sim)
 g_id(guess)
 
 gmm_id = optimize(θ->g_id(θ), guess)
 θ_id = Optim.minimizer(gmm_id)
 
-g_over(θ) = transpose(g_demand_over(s, p, θ, ν_sim))*g_demand_over(s, p, θ, ν_sim)
+g_over(θ) = transpose(g_demand_over(X, W, Z, s, p, θ, ν_sim))*g_demand_over(X, W, Z, s, p, θ, ν_sim)
 g_over(guess)
 gmm_over = optimize(θ->g_over(θ), guess)
 θ_over = Optim.minimizer(gmm_over)
