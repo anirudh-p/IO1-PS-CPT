@@ -182,7 +182,6 @@ function back_ξ(X, s, p, guess, ν)
 end
 
 
-<<<<<<< HEAD
 ##P1
 #2
 #(a) The moment condition and GMM
@@ -207,9 +206,9 @@ G3 = [mean(g31[:,1]),mean(g31[:,2]),mean(g31[:,3]),mean(g32[:,1]),mean(g32[:,2])
 ## Objective function
 G = [G1;G2;G3]
 function objective()
-GMM = norm()
-=======
-ξ_guess = back_ξ(s, p, guess, ν_sim)
+    GMM = norm()
+end
+#ξ_guess = back_ξ(s, p, guess, ν_sim)
 
 #2
 #(a) The moment condition and GMM
@@ -304,3 +303,7 @@ g_over(guess)
 gmm_over = optimize(θ->g_over(θ), guess)
 θ_over = Optim.minimizer(gmm_over)
 
+##P2
+#1a
+Δ_pc = zeros(3,3)
+Δ_oli = identity(3,3)
