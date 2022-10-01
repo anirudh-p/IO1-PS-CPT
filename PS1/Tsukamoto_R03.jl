@@ -181,8 +181,35 @@ function back_ξ(X, s, p, guess, ν)
     return ξ
 end
 
-#real = [5, 1, 1, 1, 1]
-#ξ_guess = back_ξ(X, s, p, guess, ν_sim)
+
+<<<<<<< HEAD
+##P1
+#2
+#(a) The moment condition and GMM
+# 6 moment conditions of characteristics
+g12 = ξ_guess[:,1].*X[:,:,2]
+g13 = ξ_guess[:,1].*X[:,:,3]
+g21 = ξ_guess[:,2].*X[:,:,1]
+g23 = ξ_guess[:,2].*X[:,:,3]
+g31 = ξ_guess[:,3].*X[:,:,1]
+g32 = ξ_guess[:,3].*X[:,:,2]
+# 2 moment conditions of common and market specific cost Shifters
+g1w = ξ_guess[:,1].*W[:,1]
+g1z = ξ_guess[:,1].*Z[:,1]
+g2w = ξ_guess[:,1].*W[:,2]
+g2z = ξ_guess[:,1].*Z[:,2]
+g3w = ξ_guess[:,1].*W[:,3]
+g3z = ξ_guess[:,1].*Z[:,3]
+# 8 Empirical average for each firm
+G1 = [mean(g12[:,1]),mean(g12[:,2]),mean(g12[:,3]),mean(g13[:,1]),mean(g13[:,2]),mean(g13[:,3]),mean(g1w),mean(g1z)]
+G2 = [mean(g21[:,1]),mean(g21[:,2]),mean(g21[:,3]),mean(g23[:,1]),mean(g23[:,2]),mean(g23[:,3]),mean(g2w),mean(g2z)]
+G3 = [mean(g31[:,1]),mean(g31[:,2]),mean(g31[:,3]),mean(g32[:,1]),mean(g32[:,2]),mean(g32[:,3]),mean(g3w),mean(g3z)]
+## Objective function
+G = [G1;G2;G3]
+function objective()
+GMM = norm()
+=======
+ξ_guess = back_ξ(s, p, guess, ν_sim)
 
 #2
 #(a) The moment condition and GMM
@@ -276,3 +303,4 @@ g_over(θ) = transpose(g_demand_over(X, W, Z, s, p, θ, ν_sim))*g_demand_over(X
 g_over(guess)
 gmm_over = optimize(θ->g_over(θ), guess)
 θ_over = Optim.minimizer(gmm_over)
+
