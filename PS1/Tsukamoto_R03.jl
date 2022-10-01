@@ -17,14 +17,14 @@ x_2 = rand(d_1,300) #Uniform [0,1]
 x_3 = rand(d_2,300) #Normal(0,1)
 X = zeros(100,3,3)
 
-k=0
+
 for j = 1:3
+    k=(j-1)*100
     for i=1:100
         X[i,1,j] = 1
         X[i,2,j] = x_2[k+i]
         X[i,3,j] = x_3[k+i]
     end
-    k=j*100
 end
 
 #0.2: Demand Shock
@@ -101,8 +101,8 @@ s = zeros(100,3)
 ϵ = zeros(100,3)
 
 while norm(p - p_guess) > 0.00001 
-    p_guess = p
-    s,ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
+    global p_guess = p
+    global s, global ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
     for m = 1:100
         p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
         p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
@@ -173,12 +173,8 @@ function back_ξ(s, p, guess, ν)
     return ξ
 end
 
-#θ_new = guess
-##θ_guess = zeros(5)
-#θ_guess = θ_new
-ξ_guess = back_ξ(s, p, guess, ν_sim)
-#θ_new = whatever function Ryo has to back θ from ξ
 
+<<<<<<< HEAD
 ##P1
 #2
 #(a) The moment condition and GMM
@@ -204,3 +200,99 @@ G3 = [mean(g31[:,1]),mean(g31[:,2]),mean(g31[:,3]),mean(g32[:,1]),mean(g32[:,2])
 G = [G1;G2;G3]
 function objective()
 GMM = norm()
+=======
+ξ_guess = back_ξ(s, p, guess, ν_sim)
+
+#2
+#(a) The moment condition and GMM
+
+function g_demand_id(s, p, θ, ν)
+    ξ = back_ξ(s, p, θ, ν)
+    ## 3 moment conditions of characteristics
+    g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g123 = (transpose(X[:,3,2])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g131 = (transpose(X[:,1,3])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g132 = (transpose(X[:,2,3])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g133 = (transpose(X[:,3,3])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g211 = (transpose(X[:,1,1])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g212 = (transpose(X[:,2,1])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g213 = (transpose(X[:,3,1])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g231 = (transpose(X[:,1,3])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g232 = (transpose(X[:,2,3])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g233 = (transpose(X[:,3,3])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g311 = (transpose(X[:,1,1])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g312 = (transpose(X[:,2,1])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g313 = (transpose(X[:,3,1])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g321 = (transpose(X[:,1,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g322 = (transpose(X[:,2,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g323 = (transpose(X[:,3,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+
+    ## 6 moment conditions of common and market specific cost Shifters
+    g1w = transpose(W[:,1])*ξ[:,1] ./100
+    g1z = transpose(Z[:,1])*ξ[:,1] ./100
+    g2w = transpose(W[:,2])*ξ[:,2] ./100
+    g2z = transpose(Z[:,2])*ξ[:,2] ./100
+    g3w = transpose(W[:,3])*ξ[:,3] ./100
+    g3z = transpose(Z[:,3])*ξ[:,3] ./100
+
+    g1 = (1/6)*(g121 + g122 + g123 + g131 + g132 + g133)
+    g2 = (1/6)*(g211 + g212 + g213 + g231 + g232 + g233)
+    g3 = (1/6)*(g311 + g312 + g313 + g321 + g322 + g323)
+    gw = (1/3)*(g1w + g2w + g3w)
+    gz = (1/3)*(g1z + g2z + g3z)
+
+    g = [g1, g2, g3, gw, gz]
+
+    return g
+end
+
+
+
+function g_demand_over(s, p, θ, ν)
+    ξ = back_ξ(s, p, θ, ν)
+    ## 18 moment conditions of characteristics
+    g121 = (transpose(X[:,1,2])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g122 = (transpose(X[:,2,2])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g123 = (transpose(X[:,3,2])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g131 = (transpose(X[:,1,3])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g132 = (transpose(X[:,2,3])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g133 = (transpose(X[:,3,3])*reshape(ξ[:,1], 100, 1))[1] ./100
+    g211 = (transpose(X[:,1,1])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g212 = (transpose(X[:,2,1])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g213 = (transpose(X[:,3,1])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g231 = (transpose(X[:,1,3])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g232 = (transpose(X[:,2,3])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g233 = (transpose(X[:,3,3])*reshape(ξ[:,2], 100, 1))[1] ./100
+    g311 = (transpose(X[:,1,1])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g312 = (transpose(X[:,2,1])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g313 = (transpose(X[:,3,1])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g321 = (transpose(X[:,1,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g322 = (transpose(X[:,2,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+    g323 = (transpose(X[:,3,2])*reshape(ξ[:,3], 100, 1))[1] ./100
+
+    ## 6 moment conditions of common and market specific cost Shifters
+    g1w = transpose(W[:,1])*ξ[:,1] ./100
+    g1z = transpose(Z[:,1])*ξ[:,1] ./100
+    g2w = transpose(W[:,2])*ξ[:,2] ./100
+    g2z = transpose(Z[:,2])*ξ[:,2] ./100
+    g3w = transpose(W[:,3])*ξ[:,3] ./100
+    g3z = transpose(Z[:,3])*ξ[:,3] ./100
+
+
+    g = [g121, g122, g123, g131, g132, g133, g211, g212, g213, g231, g232, g233, g311, g312, g313, g321, g322, g323, g1w, g1z, g2w, g2z, g3w, g3z]
+
+    return g
+end
+
+g_id(θ) = transpose(g_demand_id(s, p, θ, ν_sim))*g_demand_id(s, p, θ, ν_sim)
+g_id(guess)
+
+gmm_id = optimize(θ->g_id(θ), guess)
+θ_id = Optim.minimizer(gmm_id)
+
+g_over(θ) = transpose(g_demand_over(s, p, θ, ν_sim))*g_demand_over(s, p, θ, ν_sim)
+g_over(guess)
+gmm_over = optimize(θ->g_over(θ), guess)
+θ_over = Optim.minimizer(gmm_over)
+>>>>>>> 07d1fe5a0d5dd2dd2b69a901545798dc257d3136
