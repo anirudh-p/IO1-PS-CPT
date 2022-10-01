@@ -17,14 +17,14 @@ x_2 = rand(d_1,300) #Uniform [0,1]
 x_3 = rand(d_2,300) #Normal(0,1)
 X = zeros(100,3,3)
 
-k=0
+
 for j = 1:3
+    k=(j-1)*100
     for i=1:100
         X[i,1,j] = 1
         X[i,2,j] = x_2[k+i]
         X[i,3,j] = x_3[k+i]
     end
-    k=j*100
 end
 
 #0.2: Demand Shock
@@ -101,8 +101,8 @@ s = zeros(100,3)
 ϵ = zeros(100,3)
 
 while norm(p - p_guess) > 0.00001 
-    p_guess = p
-    s,ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
+    global p_guess = p
+    global s, global ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
     for m = 1:100
         p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
         p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
@@ -261,9 +261,10 @@ end
 g_id(θ) = transpose(g_demand_id(s, p, θ, ν_sim))*g_demand_id(s, p, θ, ν_sim)
 g_id(guess)
 
-θ_gmm_id = optimize(θ->g_id(θ), guess)
+gmm_id = optimize(θ->g_id(θ), guess)
+θ_id = Optim.minimizer(gmm_id)
 
 g_over(θ) = transpose(g_demand_over(s, p, θ, ν_sim))*g_demand_over(s, p, θ, ν_sim)
 g_over(guess)
-θ_gmm_over = optimize(θ->g_over(θ), guess)
-
+gmm_over = optimize(θ->g_over(θ), guess)
+θ_over = Optim.minimizer(gmm_over)
