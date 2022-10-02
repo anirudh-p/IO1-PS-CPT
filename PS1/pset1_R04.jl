@@ -3,6 +3,8 @@ using Random
 using Distributions
 using LinearAlgebra 
 using Optim
+using PlotlyJS
+using DataFrames
 #using Symbolics
 
 #********************
@@ -77,9 +79,9 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
     q=0
     for m=1:100
         α_i = α.+σ_α*ν[q+1:q+1000]
-        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
-        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
-        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
+        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000)
+        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000)
+        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000)
         q=1000*m
     end
 
@@ -107,9 +109,9 @@ while norm(p - p_guess) > 0.00001
     p_guess = p
     s, ϵ = model_elasticity(p, X, β, α, σ_α, ξ, ν)
     for m = 1:100
-        p[m,1] = MC[m,1] / (ones(100,3) .+ 1 ./ϵ)[m,1]
-        p[m,2] = MC[m,2] / (ones(100,3) .+ 1 ./ϵ)[m,2]
-        p[m,3] = MC[m,3] / (ones(100,3) .+ 1 ./ϵ)[m,3]
+        p[m,1] = (ϵ[m,1]*MC[m,1]) / (1 + ϵ[m,1])
+        p[m,2] = (ϵ[m,2]*MC[m,2]) / (1 + ϵ[m,2])
+        p[m,3] = (ϵ[m,3]*MC[m,3]) / (1 + ϵ[m,3])
     end
 end
 #p
@@ -119,7 +121,7 @@ end
 #********************
 
 #Guess Parameter Estimates (β_1,β_2,β_3,α,σ_α):
-guess = [4,1.5,2,1,0.8]
+guess = [6,.5,2,1.2,2]
 d_3 = LogNormal(0,1)
 ν_sim = rand(d_3,100000)
 
@@ -146,9 +148,10 @@ function share_prediction(δ, p, θ, ν)
     end
     return s
 end
-    
-#δ_guess = X[:,1,:]*5 + X[:,2,:] + X[:,3,:] - p
-#s_guess = share_prediction(δ_guess, p, real, ν_sim)
+
+act = [5,1,1,1,1]
+δ_guess = X[:,1,:]*5 + X[:,2,:] + X[:,3,:] - p
+s_guess = share_prediction(δ_guess, p, act, ν_sim)
 
 function contraction_map(s, p, δ_new, θ, ν)
     δ_guess = zeros(100,3)
@@ -160,7 +163,7 @@ function contraction_map(s, p, δ_new, θ, ν)
     return δ_new
 end
 
-#δ_test = contraction_map(s, p, rand(100,3), guess, ν_sim)
+δ_test = contraction_map(s, p, rand(100,3), guess, ν_sim)
 
 function back_ξ(X, s, p, guess, ν)
     δ_guess = X[:,1,:]*guess[1] + X[:,2,:]*guess[2] + X[:,3,:]*guess[3] - guess[4]*p
@@ -181,34 +184,8 @@ function back_ξ(X, s, p, guess, ν)
     return ξ
 end
 
-
-##P1
-#2
-#(a) The moment condition and GMM
-# 6 moment conditions of characteristics
-g12 = ξ_guess[:,1].*X[:,:,2]
-g13 = ξ_guess[:,1].*X[:,:,3]
-g21 = ξ_guess[:,2].*X[:,:,1]
-g23 = ξ_guess[:,2].*X[:,:,3]
-g31 = ξ_guess[:,3].*X[:,:,1]
-g32 = ξ_guess[:,3].*X[:,:,2]
-# 2 moment conditions of common and market specific cost Shifters
-g1w = ξ_guess[:,1].*W[:,1]
-g1z = ξ_guess[:,1].*Z[:,1]
-g2w = ξ_guess[:,1].*W[:,2]
-g2z = ξ_guess[:,1].*Z[:,2]
-g3w = ξ_guess[:,1].*W[:,3]
-g3z = ξ_guess[:,1].*Z[:,3]
-# 8 Empirical average for each firm
-G1 = [mean(g12[:,1]),mean(g12[:,2]),mean(g12[:,3]),mean(g13[:,1]),mean(g13[:,2]),mean(g13[:,3]),mean(g1w),mean(g1z)]
-G2 = [mean(g21[:,1]),mean(g21[:,2]),mean(g21[:,3]),mean(g23[:,1]),mean(g23[:,2]),mean(g23[:,3]),mean(g2w),mean(g2z)]
-G3 = [mean(g31[:,1]),mean(g31[:,2]),mean(g31[:,3]),mean(g32[:,1]),mean(g32[:,2]),mean(g32[:,3]),mean(g3w),mean(g3z)]
-## Objective function
-G = [G1;G2;G3]
-function objective()
-    GMM = norm()
-end
 #ξ_guess = back_ξ(s, p, guess, ν_sim)
+##P1
 
 #2
 #(a) The moment condition and GMM
@@ -342,31 +319,100 @@ function model_crosselasticity(p, X, θ, ξ, ν)
         s_3[m] = sum(prob[m,:,3])/1000   
     end
 
-    ϵ = ones(100,3)
-    ϵ_12 = ones(100)
-    ϵ_13 = ones(100)
-    ϵ_21 = ones(100)
-    ϵ_23 = ones(100)
-    ϵ_31 = ones(100)
-    ϵ_32 = ones(100)
+    ϵ = ones(300,3)
 
     q=0
     for m=1:100
         α_i = θ[4].+θ[5]*ν[q+1:q+1000]
-        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
-        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
-        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
-        ϵ_12[m] = sum(α_i.*prob[m,:,2])/1000
-        ϵ_13[m] = sum(α_i.*prob[m,:,3])/1000
-        ϵ_21[m] = sum(α_i.*prob[m,:,1])/1000
-        ϵ_23[m] = sum(α_i.*prob[m,:,3])/1000
-        ϵ_31[m] = sum(α_i.*prob[m,:,1])/1000
-        ϵ_32[m] = sum(α_i.*prob[m,:,2])/1000
+        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
+        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
+        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
+        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/1000
+        ϵ[3*m-2,3] = sum(α_i.*prob[m,:,3])/1000
+        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/1000
+        ϵ[3*m-1,3] = sum(α_i.*prob[m,:,3])/1000
+        ϵ[3*m,1] = sum(α_i.*prob[m,:,1])/1000
+        ϵ[3*m,2] = sum(α_i.*prob[m,:,2])/1000
         q=1000*m
     end
 
     s = hcat(s_1, s_2, s_3)
-    return s,ϵ,ϵ_12,ϵ_13,ϵ_21,ϵ_23,ϵ_31,ϵ_32
+    return s,ϵ
 end
 
-s_coll,ϵ_coll,ϵ_coll12,ϵ_coll13,ϵ_coll21,ϵ_col23,ϵ_coll31,ϵ_coll32 = model_crosselasticity(p, X, θ_id, ξ_estimate, ν_sim)
+s_coll,ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_estimate, ν_sim)
+mc_coll = zeros(100,3)
+for m = 1:100
+    mc_coll[m, :] = p[m,:] - ϵ_coll[3*m-2:3*m,:]*s_coll[m,:]
+end
+
+mc_pc = p
+#1b
+
+cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:], Actual = MC[:])
+cost_data = stack(cost_data, 1:4)
+
+plot(cost_data, y =:value, x =:variable, kind = "box")
+
+
+
+##P3 Merger
+function model_mergeelasticity(p, X, θ, ξ, ν)
+    s_1 = zeros(100)
+    s_2 = zeros(100)
+    s_3 = zeros(100)
+
+    prob = zeros(100,1000,3)
+    l=0
+    for m=1:100
+        for i=1:1000
+            δ_1 = transpose(X[m,:,1])*θ[1:3] +ξ[m,1] + θ[4]*p[m,1]
+            δ_2 = transpose(X[m,:,2])*θ[1:3] +ξ[m,2] + θ[4]*p[m,2]
+            δ_3 = transpose(X[m,:,3])*θ[1:3] +ξ[m,3] + θ[4]*p[m,3]
+
+            μ_i = θ[5]*p[m,1]*ν[i+l]
+
+            prob[m,i,1] = exp(δ_1+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
+            prob[m,i,2] = exp(δ_2+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
+            prob[m,i,3] = exp(δ_3+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))           
+        end
+        l=1000*m
+        s_1[m] = sum(prob[m,:,1])/1000
+        s_2[m] = sum(prob[m,:,2])/1000
+        s_3[m] = sum(prob[m,:,3])/1000   
+    end
+
+    ϵ = ones(300,3)
+
+    q=0
+    for m=1:100
+        α_i = θ[4].+θ[5]*ν[q+1:q+1000]
+        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
+        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
+        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
+        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/1000
+        ϵ[3*m-2,3] = 0
+        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/1000
+        ϵ[3*m-1,3] = 0
+        ϵ[3*m,1] = 0
+        ϵ[3*m,2] = 0
+        q=1000*m
+    end
+
+    s = hcat(s_1, s_2, s_3)
+    return s,ϵ
+end
+p_guess=rand(Uniform(10,15),100,3)
+p_merge = ones(100,3)
+s_merge = zeros(100,3)
+ϵ_merge = zeros(100,3)
+
+while norm(p - p_guess) > 0.01 
+    p_guess = p_merge
+    s_merge, ϵ_merge = model_mergeelasticity(p, X, θ_id, ξ, ν_sim)
+    for m = 1:100
+        p_merge[m,:] =  mc_oli[m, :]  + ϵ_merge[3*m-2:3*m,:]*s_merge[m,:]
+    end
+end
+
+
