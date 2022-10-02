@@ -48,7 +48,6 @@ d_3 = LogNormal(0,1)
 
 function model_elasticity(p, X, β, α, σ_α, ξ, ν)
 
-
     s_1 = zeros(100)
     s_2 = zeros(100)
     s_3 = zeros(100)
@@ -77,10 +76,10 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
 
     q=0
     for m=1:100
-        α_i = σ_α*ν[q+1:q+1000]
-        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/1000
-        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/1000
-        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/1000
+        α_i = α.+σ_α*ν[q+1:q+1000]
+        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
+        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
+        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
         q=1000*m
     end
 
@@ -164,21 +163,21 @@ end
 #δ_test = contraction_map(s, p, rand(100,3), guess, ν_sim)
 
 function back_ξ(X, s, p, guess, ν)
-    #δ_guess = X[:,1,:]*guess[1] + X[:,2,:]*guess[2] + X[:,3,:]*guess[3] - guess[4]*p
-    δ_guess = rand(100,3)
+    δ_guess = X[:,1,:]*guess[1] + X[:,2,:]*guess[2] + X[:,3,:]*guess[3] - guess[4]*p
+    #δ_guess = rand(100,3)
     δ = contraction_map(s, p, δ_guess, guess, ν)
 
     #Step 1.3: Estimate the ξ from δ 
-    agg_ν = zeros(100,1)
-    q = 0
-    for m = 1:100
-        agg_ν[m] = sum(ν[q+1:q+1000])/1000
-        q = m*1000
-    end
-    agg_ν
-    diagm(vec(agg_ν))
+    #agg_ν = zeros(100,1)
+    #q = 0
+    #for m = 1:100
+    #    agg_ν[m] = sum(ν[q+1:q+1000])/1000
+    #    q = m*1000
+    #end
+    #agg_ν
+    #diagm(vec(agg_ν))
 
-    ξ = δ - X[:,1,:].*guess[1] - X[:,2,:].*guess[2] - X[:,3,:].*guess[3] + guess[4]*p + guess[5]*diagm(vec(agg_ν))*p
+    ξ = δ - X[:,1,:].*guess[1] - X[:,2,:].*guess[2] - X[:,3,:].*guess[3] + guess[4]*p #+ guess[5]*diagm(vec(agg_ν))*p
     return ξ
 end
 
@@ -296,8 +295,10 @@ end
 g_id(θ) = transpose(g_demand_id(X, W, Z, s, p, θ, ν_sim))*g_demand_id(X, W, Z, s, p, θ, ν_sim)
 g_id(guess)
 
-gmm_id = optimize(θ->g_id(θ), guess, Optim.Options(iterations=2000))
+gmm_id = optimize(θ->g_id(θ), guess)
 θ_id = Optim.minimizer(gmm_id)
+#save to compare
+θ_test = θ_id
 
 g_over(θ) = transpose(g_demand_over(X, W, Z, s, p, θ, ν_sim))*g_demand_over(X, W, Z, s, p, θ, ν_sim)
 g_over(guess)
@@ -306,5 +307,66 @@ gmm_over = optimize(θ->g_over(θ), guess)
 
 ##P2
 #1a
+θ_id = [5,1,1,1,1]
 
+ξ_estimate = back_ξ(X, s, p, θ_id, ν_sim)
 
+s_oli, ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_estimate, ν_sim) 
+mc_oli = zeros(100,3)
+for m = 1:100
+    mc_oli[m, :] = p[m,:] - diagm(ϵ_oli[m,:])*s_oli[m,:]
+end
+
+function model_crosselasticity(p, X, θ, ξ, ν)
+    s_1 = zeros(100)
+    s_2 = zeros(100)
+    s_3 = zeros(100)
+
+    prob = zeros(100,1000,3)
+    l=0
+    for m=1:100
+        for i=1:1000
+            δ_1 = transpose(X[m,:,1])*θ[1:3] +ξ[m,1] + θ[4]*p[m,1]
+            δ_2 = transpose(X[m,:,2])*θ[1:3] +ξ[m,2] + θ[4]*p[m,2]
+            δ_3 = transpose(X[m,:,3])*θ[1:3] +ξ[m,3] + θ[4]*p[m,3]
+
+            μ_i = θ[5]*p[m,1]*ν[i+l]
+
+            prob[m,i,1] = exp(δ_1+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
+            prob[m,i,2] = exp(δ_2+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
+            prob[m,i,3] = exp(δ_3+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))           
+        end
+        l=1000*m
+        s_1[m] = sum(prob[m,:,1])/1000
+        s_2[m] = sum(prob[m,:,2])/1000
+        s_3[m] = sum(prob[m,:,3])/1000   
+    end
+
+    ϵ = ones(100,3)
+    ϵ_12 = ones(100)
+    ϵ_13 = ones(100)
+    ϵ_21 = ones(100)
+    ϵ_23 = ones(100)
+    ϵ_31 = ones(100)
+    ϵ_32 = ones(100)
+
+    q=0
+    for m=1:100
+        α_i = θ[4].+θ[5]*ν[q+1:q+1000]
+        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
+        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
+        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
+        ϵ_12[m] = sum(α_i.*prob[m,:,2])/1000
+        ϵ_13[m] = sum(α_i.*prob[m,:,3])/1000
+        ϵ_21[m] = sum(α_i.*prob[m,:,1])/1000
+        ϵ_23[m] = sum(α_i.*prob[m,:,3])/1000
+        ϵ_31[m] = sum(α_i.*prob[m,:,1])/1000
+        ϵ_32[m] = sum(α_i.*prob[m,:,2])/1000
+        q=1000*m
+    end
+
+    s = hcat(s_1, s_2, s_3)
+    return s,ϵ,ϵ_12,ϵ_13,ϵ_21,ϵ_23,ϵ_31,ϵ_32
+end
+
+s_coll,ϵ_coll,ϵ_coll12,ϵ_coll13,ϵ_coll21,ϵ_col23,ϵ_coll31,ϵ_coll32 = model_crosselasticity(p, X, θ_id, ξ_estimate, ν_sim)
