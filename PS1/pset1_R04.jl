@@ -79,9 +79,9 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
     q=0
     for m=1:100
         α_i = α.+σ_α*ν[q+1:q+1000]
-        ϵ[m,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000)
-        ϵ[m,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000)
-        ϵ[m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000)
+        ϵ[m,1] = (sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000))*(p[m,1]/s_1[m])
+        ϵ[m,2] = (sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000))*(p[m,2]/s_2[m])
+        ϵ[m,3] = (sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000))*(p[m,3]/s_3[m])
         q=1000*m
     end
 
