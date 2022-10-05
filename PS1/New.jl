@@ -14,9 +14,7 @@ using Optim
 #********************
 #Step0 Load Data
 #********************
-#simulated_Rodrigo = DataFrame(CSV.read("D:\\BC PhD\\Sem 3\\IO\\PS1\\pset1_data_new.csv",DataFrame))
-simulated_Rodrigo = DataFrame(CSV.read(pset1_data_new.csv,DataFrame))
-
+simulated_Rodrigo = DataFrame(CSV.read("D:\\BC PhD\\Sem 3\\IO\\PS1\\pset1_data_new.csv",DataFrame))
 
 X = zeros(100,3,3)
 for j=1:3
@@ -78,7 +76,7 @@ end
 
 function contraction_map(s, p, δ_new, θ, ν)
     δ_guess = zeros(100,3)
-    while norm(δ_new - δ_guess) > .001
+    while norm(δ_new - δ_guess) > .1
         δ_guess = δ_new
         s_pred = share_prediction(δ_guess,p, θ, ν)
         δ_new = δ_guess + log.(s) - log.(s_pred)
@@ -130,15 +128,14 @@ Objective(θ) = transpose(moment_objective_fn(θ, s, p, X, W, Z, ν_sim))*moment
 
 #Checking If Function Works
 #Objective([1.0,2.2,3.3,4.1,-2.9])
-Objective(parameter_guess.+0.1)
+Objective(a)
 
 #Optimization
 gmm_id = optimize(Objective, parameter_guess,
                     Optim.Options(g_tol = 1e-12,
-                                    #iterations = 10,
+                                    iterations = 10,
                                     store_trace = true,
-                                    show_trace = false
-                                    ))
+                                    show_trace = false,
+                                    time_limit=1000))
 
 θ_id = Optim.minimizer(gmm_id)
-
