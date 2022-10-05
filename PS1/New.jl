@@ -14,7 +14,9 @@ using Optim
 #********************
 #Step0 Load Data
 #********************
-simulated_Rodrigo = DataFrame(CSV.read("D:\\BC PhD\\Sem 3\\IO\\PS1\\pset1_data_new.csv",DataFrame))
+#simulated_Rodrigo = DataFrame(CSV.read("D:\\BC PhD\\Sem 3\\IO\\PS1\\pset1_data_new.csv",DataFrame))
+simulated_Rodrigo = DataFrame(CSV.read(pset1_data_new.csv,DataFrame))
+
 
 X = zeros(100,3,3)
 for j=1:3
