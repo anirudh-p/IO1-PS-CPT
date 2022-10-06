@@ -59,12 +59,14 @@ function share_prediction(δ, p, θ, ν)
     l=0
     for m=1:100
         for i=1:1000
-            μ_i = θ[5]*p[m,1]*ν[i+l]
+            μ_i1 = θ[5]*p[m,1]*ν[i+l]
+            μ_i2 = θ[5]*p[m,2]*ν[i+l]
+            μ_i3 = θ[5]*p[m,3]*ν[i+l]
             #μ_i = 0
 
-            s_i[m,i,1] = exp(δ[m,1]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))     
-            s_i[m,i,2] = exp(δ[m,2]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))     
-            s_i[m,i,3] = exp(δ[m,3]+μ_i)/(1+exp(δ[m,1]+μ_i)+exp(δ[m,2]+μ_i)+exp(δ[m,3]+μ_i))           
+            s_i[m,i,1] = exp(δ[m,1]+μ_i1)/(1+exp(δ[m,1]+μ_i1)+exp(δ[m,2]+μ_i2)+exp(δ[m,3]+μ_i3))     
+            s_i[m,i,2] = exp(δ[m,2]+μ_i2)/(1+exp(δ[m,1]+μ_i1)+exp(δ[m,2]+μ_i2)+exp(δ[m,3]+μ_i3))     
+            s_i[m,i,3] = exp(δ[m,3]+μ_i3)/(1+exp(δ[m,1]+μ_i1)+exp(δ[m,2]+μ_i2)+exp(δ[m,3]+μ_i3))           
         end
         s[m,1] = sum(s_i[m,:,1])/1000
         s[m,2] = sum(s_i[m,:,2])/1000
@@ -84,9 +86,12 @@ function contraction_map(s, p, δ_new, θ, ν)
     return δ_new
 end
 
+δ_rand = rand(Uniform(5,10),100,3)
+
+contraction_map(s,p,δ_rand,actual,ν_sim)
 
 function moment_objective_fn(θ, s, p, X, W, Z, ν_sim)
-    δ_guess = rand(100,3)
+    δ_guess = rand(100,3)*25
     δ_cm = contraction_map(s, p, δ_guess, θ, ν_sim)
 
     # IV-GMM (Only Demand Size)
@@ -128,14 +133,12 @@ Objective(θ) = transpose(moment_objective_fn(θ, s, p, X, W, Z, ν_sim))*moment
 
 #Checking If Function Works
 #Objective([1.0,2.2,3.3,4.1,-2.9])
-Objective(a)
+Objective(parameter_guess)
 
 #Optimization
 gmm_id = optimize(Objective, parameter_guess,
-                    Optim.Options(g_tol = 1e-12,
-                                    iterations = 10,
-                                    store_trace = true,
-                                    show_trace = false,
-                                    time_limit=1000))
+                    Optim.Options(g_tol = 1e-2,
+                                    iterations = 1000,
+                                    time_limit=86400))
 
 θ_id = Optim.minimizer(gmm_id)
