@@ -79,9 +79,9 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
     q=0
     for m=1:100
         α_i = α.+σ_α*ν[q+1:q+1000]
-        ϵ[m,1] = (sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000))*(p[m,1]/s_1[m])
-        ϵ[m,2] = (sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000))*(p[m,2]/s_2[m])
-        ϵ[m,3] = (sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000))*(p[m,3]/s_3[m])
+        ϵ[m,1] = (sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000))
+        ϵ[m,2] = (sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000))
+        ϵ[m,3] = (sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000))
         q=1000*m
     end
 
@@ -284,14 +284,14 @@ gmm_over = optimize(θ->g_over(θ), guess)
 
 ##P2
 #1a
-θ_id = [5,1,1,1,1]
+θ_id = [6.948,0.4632,2.734,1.642,0.1643]
 
 ξ_estimate = back_ξ(X, s, p, θ_id, ν_sim)
 
 s_oli, ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_estimate, ν_sim) 
 mc_oli = zeros(100,3)
 for m = 1:100
-    mc_oli[m, :] = p[m,:] - diagm(ϵ_oli[m,:])*s_oli[m,:]
+    mc_oli[m, :] = p[m,:] + inv(diagm(ϵ_oli[m,:]))*s[m,:]
 end
 
 function model_crosselasticity(p, X, θ, ξ, ν)
@@ -324,15 +324,15 @@ function model_crosselasticity(p, X, θ, ξ, ν)
     q=0
     for m=1:100
         α_i = θ[4].+θ[5]*ν[q+1:q+1000]
-        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
-        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
-        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
-        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/1000
-        ϵ[3*m-2,3] = sum(α_i.*prob[m,:,3])/1000
-        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/1000
-        ϵ[3*m-1,3] = sum(α_i.*prob[m,:,3])/1000
-        ϵ[3*m,1] = sum(α_i.*prob[m,:,1])/1000
-        ϵ[3*m,2] = sum(α_i.*prob[m,:,2])/1000
+        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000)
+        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000)
+        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000)
+        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/(1000)
+        ϵ[3*m-2,3] = sum(α_i.*prob[m,:,3])/(1000)
+        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/(1000)
+        ϵ[3*m-1,3] = sum(α_i.*prob[m,:,3])/(1000)
+        ϵ[3*m,1] = sum(α_i.*prob[m,:,1])/(1000)
+        ϵ[3*m,2] = sum(α_i.*prob[m,:,2])/(1000)
         q=1000*m
     end
 
@@ -343,11 +343,18 @@ end
 s_coll,ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_estimate, ν_sim)
 mc_coll = zeros(100,3)
 for m = 1:100
-    mc_coll[m, :] = p[m,:] - ϵ_coll[3*m-2:3*m,:]*s_coll[m,:]
+    mc_coll[m, :] = p[m,:] + (1 ./ϵ_coll[3*m-2:3*m,:])*s_coll[m,:]
 end
 
 mc_pc = p
 #1b
+comp = DataFrame(firm1 = mc_pc[:,1], firm2 = mc_pc[:,2], firm3 = mc_pc[:,3])
+stackcomp = stack(comp, 1:3)
+plot(stackcomp, y =:value, x =:variable,  kind = "box")
+
+oli = DataFrame(firm1 = mc_oli[:,1], firm2 = mc_oli[:,2], firm3 = mc_oli[:,3])
+stackoli = stack(oli, 1:3)
+plot(stackoli, y =:value, x =:variable,  kind = "box")
 
 cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:], Actual = MC[:])
 cost_data = stack(cost_data, 1:4)
@@ -387,12 +394,12 @@ function model_mergeelasticity(p, X, θ, ξ, ν)
     q=0
     for m=1:100
         α_i = θ[4].+θ[5]*ν[q+1:q+1000]
-        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(1000)
-        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(1000)
-        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(1000)
-        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/1000
+        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000)*(p[m,1]/s_1[m])
+        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000)*(p[m,2]/s_1[m])
+        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000)*(p[m,3]/s_1[m])
+        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/1000*(p[m,2]/s_1[m])
         ϵ[3*m-2,3] = 0
-        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/1000
+        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/1000*(p[m,1]/s_1[m])
         ϵ[3*m-1,3] = 0
         ϵ[3*m,1] = 0
         ϵ[3*m,2] = 0
@@ -409,7 +416,7 @@ s_merge = zeros(100,3)
 
 while norm(p - p_guess) > 0.01 
     p_guess = p_merge
-    s_merge, ϵ_merge = model_mergeelasticity(p, X, θ_id, ξ, ν_sim)
+    s_merge, ϵ_merge = model_mergeelasticity(p, X, θ_id, ξ_estimate, ν_sim)
     for m = 1:100
         p_merge[m,:] =  mc_oli[m, :]  + ϵ_merge[3*m-2:3*m,:]*s_merge[m,:]
     end
