@@ -55,10 +55,10 @@ d_3 = LogNormal(0,1)
 function share_prediction(δ, p, θ, ν)
   
     s = zeros(100,3)
-    s_i = zeros(100,1000,3)
+    s_i = zeros(100,100,3)
     l=0
     for m=1:100
-        for i=1:1000
+        for i=1:100
             μ_i1 = θ[5]*p[m,1]*ν[i+l]
             μ_i2 = θ[5]*p[m,2]*ν[i+l]
             μ_i3 = θ[5]*p[m,3]*ν[i+l]
@@ -68,16 +68,16 @@ function share_prediction(δ, p, θ, ν)
             s_i[m,i,2] = exp(δ[m,2]+μ_i2)/(1+exp(δ[m,1]+μ_i1)+exp(δ[m,2]+μ_i2)+exp(δ[m,3]+μ_i3))     
             s_i[m,i,3] = exp(δ[m,3]+μ_i3)/(1+exp(δ[m,1]+μ_i1)+exp(δ[m,2]+μ_i2)+exp(δ[m,3]+μ_i3))           
         end
-        s[m,1] = sum(s_i[m,:,1])/1000
-        s[m,2] = sum(s_i[m,:,2])/1000
-        s[m,3] = sum(s_i[m,:,3])/1000  
-        l=1000*m
+        s[m,1] = sum(s_i[m,:,1])/100
+        s[m,2] = sum(s_i[m,:,2])/100
+        s[m,3] = sum(s_i[m,:,3])/100  
+        l=100*m
     end
     return s
 end
 
 function contraction_map(s, p, δ_new, θ, ν)
-    δ_guess = zeros(100,3)
+    δ_guess = rand(100,3)
     while norm(δ_new - δ_guess) > .1
         δ_guess = δ_new
         s_pred = share_prediction(δ_guess,p, θ, ν)
@@ -86,7 +86,7 @@ function contraction_map(s, p, δ_new, θ, ν)
     return δ_new
 end
 
-δ_rand = rand(Uniform(5,10),100,3)
+δ_rand = rand(100,3)*25
 
 contraction_map(s,p,δ_rand,actual,ν_sim)
 
@@ -111,11 +111,6 @@ function moment_objective_fn(θ, s, p, X, W, Z, ν_sim)
     
     #β_hat = zeros(4,3)
     β_hat = inv(transpose(x)*z*wt*transpose(z)*x)*transpose(x)*z*wt*transpose(z)*reshape(δ_cm,300,1)
-    #β_hat[:,2] = inv(transpose(x[:,:,2])*z[:,:,2]*wt*transpose(z[:,:,2])*x[:,:,2])*transpose(x[:,:,2])*z[:,:,2]*wt*transpose(z[:,:,2])*δ_cm[:,2]
-    #β_hat[:,3] = inv(transpose(x[:,:,3])*z[:,:,3]*wt*transpose(z[:,:,3])*x[:,:,3])*transpose(x[:,:,3])*z[:,:,3]*wt*transpose(z[:,:,3])*δ_cm[:,3]
-
-
-    #ξ = δ_cm - cat(x[:,:,1]*β_hat[:,1],x[:,:,2]*β_hat[:,2],x[:,:,3]*β_hat[:,3],dims=2)  #+ guess[5]*diagm(vec(agg_ν))*p
 
     ξ = δ_cm - cat([X[:,:,1] p[:,1]]*β_hat,[X[:,:,2] p[:,2]]*β_hat,[X[:,:,3] p[:,3]]*β_hat,dims=2)  
 
@@ -138,7 +133,8 @@ Objective(parameter_guess)
 #Optimization
 gmm_id = optimize(Objective, parameter_guess,
                     Optim.Options(g_tol = 1e-2,
-                                    iterations = 1000,
-                                    time_limit=86400))
+                                    iterations = 2500,
+                                    time_limit=14400))
 
 θ_id = Optim.minimizer(gmm_id)
+
