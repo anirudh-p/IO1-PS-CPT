@@ -171,12 +171,9 @@ function back_ξ(θ, s, p, X, W, Z, ν_sim)
 end   
 
 ξ_hat = back_ξ(θ_id,s,p,X,W,Z,ν_sim)
+#ξ_hat = rand(Normal(0,1),100,3)
 
 function model_elasticity(p, X, β, α, σ_α, ξ, ν)
-
-    s_1 = zeros(100)
-    s_2 = zeros(100)
-    s_3 = zeros(100)
 
     prob = zeros(100,100,3)
     l=0
@@ -193,13 +190,8 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
             prob[m,i,3] = exp(δ_3+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))           
         end
         l=100*m
-        s_1[m] = sum(prob[m,:,1])/100
-        s_2[m] = sum(prob[m,:,2])/100
-        s_3[m] = sum(prob[m,:,3])/100   
     end
-
     ϵ = ones(100,3)
-
     q=0
     for m=1:100
         α_i = α.+σ_α*ν[q+1:q+100]
@@ -209,8 +201,7 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
         q=100*m
     end
 
-    s = hcat(s_1, s_2, s_3)
-    return s,ϵ
+    return ϵ
 end
 
 function model_crosselasticity(p, X, θ, ξ, ν)
@@ -256,21 +247,21 @@ function model_crosselasticity(p, X, θ, ξ, ν)
     end
 
     s = hcat(s_1, s_2, s_3)
-    return s,ϵ
+    return ϵ
 end
 
 #Marginal Cost (Perfect Competition)
 mc_pc = p
 
 #Marginal Cost (Oligopoly)
-s_oli, ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_hat, ν_sim) 
+ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_hat, ν_sim) 
 mc_oli = zeros(100,3)
 for m = 1:100
     mc_oli[m, :] = p[m,:] + inv(diagm(ϵ_oli[m,:]))*s[m,:]
 end
 
 #Marginal Cost (Perfect Collusion)
-s_coll,ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_hat, ν_sim)
+ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_hat, ν_sim)
 mc_coll = zeros(100,3)
 for m = 1:100
     mc_coll[m, :] = p[m,:] + (1 ./ϵ_coll[3*m-2:3*m,:])*s[m,:]
