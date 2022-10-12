@@ -259,19 +259,23 @@ function model_crosselasticity(p, X, θ, ξ, ν)
     return s,ϵ
 end
 
+#Marginal Cost (Perfect Competition)
+mc_pc = p
+
+#Marginal Cost (Oligopoly)
 s_oli, ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_hat, ν_sim) 
 mc_oli = zeros(100,3)
 for m = 1:100
     mc_oli[m, :] = p[m,:] + inv(diagm(ϵ_oli[m,:]))*s[m,:]
 end
 
+#Marginal Cost (Perfect Collusion)
 s_coll,ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_hat, ν_sim)
 mc_coll = zeros(100,3)
 for m = 1:100
     mc_coll[m, :] = p[m,:] + (1 ./ϵ_coll[3*m-2:3*m,:])*s[m,:]
 end
 
-mc_pc = p
 #1b
 comp = DataFrame(firm1 = mc_pc[:,1], firm2 = mc_pc[:,2], firm3 = mc_pc[:,3])
 stackcomp = stack(comp, 1:3)
