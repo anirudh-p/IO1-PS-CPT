@@ -127,7 +127,6 @@ end
 Objective(θ) = transpose(moment_objective_fn(θ, s, p, X, W, Z, ν_sim))*moment_objective_fn(θ, s, p, X, W, Z, ν_sim) 
 
 #Checking If Function Works
-#Objective([1.0,2.2,3.3,4.1,-2.9])
 Objective(parameter_guess)
 
 #Optimization
@@ -138,11 +137,40 @@ gmm_id = optimize(Objective, parameter_guess,
 
 θ_id = Optim.minimizer(gmm_id)
 
+#######################
 ##P2
+#######################
 #1a
 θ_id = [6.948,0.4632,2.734,1.642,0.1643]
 
-ξ_estimate = back_ξ(X, s, p, θ_id, ν_sim)
+function back_ξ(θ, s, p, X, W, Z, ν_sim)
+    δ_guess = rand(100,3)*25
+    δ_cm = contraction_map(s, p, δ_guess, θ, ν_sim)
+
+    # IV-GMM (Only Demand Size)
+    x = zeros(100,4,3)
+    x = cat([X[:,:,1] p[:,1] ], [X[:,:,2] p[:,2] ], [ X[:,:,3] p[:,3] ], dims=1) #100*4
+
+    #100x3x3 (Summed over each characteristic)
+    demand_instruments = cat(sum(X,dims=3)-X[:,:,1], sum(X,dims=3)-X[:,:,2],sum(X,dims=3)-X[:,:,3], dims=1)[:,:,1]
+
+    #100x2x3 (2 Level Shocks for Supply)
+    supply_instruments = cat([W[:,1] Z[:,1]], [W[:,2] Z[:,2]], [W[:,3] Z[:,3]], dims=1)
+
+    #5 Instruments (3 Demands Characteristics and 2 supply shocks)
+    z= cat(demand_instruments, supply_instruments, dims=2)
+
+    wt = Matrix(I,5,5)
+    
+    #β_hat = zeros(4,3)
+    β_hat = inv(transpose(x)*z*wt*transpose(z)*x)*transpose(x)*z*wt*transpose(z)*reshape(δ_cm,300,1)
+
+    ξ = δ_cm - cat([X[:,:,1] p[:,1]]*β_hat,[X[:,:,2] p[:,2]]*β_hat,[X[:,:,3] p[:,3]]*β_hat,dims=2)  
+
+    return ξ
+end   
+
+ξ_hat = back_ξ(θ_id,s,p,X,W,Z,ν_sim)
 
 function model_elasticity(p, X, β, α, σ_α, ξ, ν)
 
@@ -150,10 +178,10 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
     s_2 = zeros(100)
     s_3 = zeros(100)
 
-    prob = zeros(100,1000,3)
+    prob = zeros(100,100,3)
     l=0
     for m=1:100
-        for i=1:1000
+        for i=1:100
             δ_1 = transpose(X[m,:,1])*β +ξ[m,1] + α*p[m,1]
             δ_2 = transpose(X[m,:,2])*β +ξ[m,2] + α*p[m,2]
             δ_3 = transpose(X[m,:,3])*β +ξ[m,3] + α*p[m,3]
@@ -164,31 +192,25 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
             prob[m,i,2] = exp(δ_2+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
             prob[m,i,3] = exp(δ_3+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))           
         end
-        l=1000*m
-        s_1[m] = sum(prob[m,:,1])/1000
-        s_2[m] = sum(prob[m,:,2])/1000
-        s_3[m] = sum(prob[m,:,3])/1000   
+        l=100*m
+        s_1[m] = sum(prob[m,:,1])/100
+        s_2[m] = sum(prob[m,:,2])/100
+        s_3[m] = sum(prob[m,:,3])/100   
     end
 
     ϵ = ones(100,3)
 
     q=0
     for m=1:100
-        α_i = α.+σ_α*ν[q+1:q+1000]
-        ϵ[m,1] = (sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000))
-        ϵ[m,2] = (sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000))
-        ϵ[m,3] = (sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000))
-        q=1000*m
+        α_i = α.+σ_α*ν[q+1:q+100]
+        ϵ[m,1] = (sum(α_i.*prob[m,:,1].*(1 .- prob[m,:,1]))/(-100))
+        ϵ[m,2] = (sum(α_i.*prob[m,:,2].*(1 .- prob[m,:,2]))/(-100))
+        ϵ[m,3] = (sum(α_i.*prob[m,:,3].*(1 .- prob[m,:,3]))/(-100))
+        q=100*m
     end
 
     s = hcat(s_1, s_2, s_3)
     return s,ϵ
-end
-
-s_oli, ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_estimate, ν_sim) 
-mc_oli = zeros(100,3)
-for m = 1:100
-    mc_oli[m, :] = p[m,:] + inv(diagm(ϵ_oli[m,:]))*s[m,:]
 end
 
 function model_crosselasticity(p, X, θ, ξ, ν)
@@ -237,10 +259,16 @@ function model_crosselasticity(p, X, θ, ξ, ν)
     return s,ϵ
 end
 
-s_coll,ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_estimate, ν_sim)
+s_oli, ϵ_oli = model_elasticity(p, X, θ_id[1:3], θ_id[4], θ_id[5], ξ_hat, ν_sim) 
+mc_oli = zeros(100,3)
+for m = 1:100
+    mc_oli[m, :] = p[m,:] + inv(diagm(ϵ_oli[m,:]))*s[m,:]
+end
+
+s_coll,ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_hat, ν_sim)
 mc_coll = zeros(100,3)
 for m = 1:100
-    mc_coll[m, :] = p[m,:] + (1 ./ϵ_coll[3*m-2:3*m,:])*s_coll[m,:]
+    mc_coll[m, :] = p[m,:] + (1 ./ϵ_coll[3*m-2:3*m,:])*s[m,:]
 end
 
 mc_pc = p
