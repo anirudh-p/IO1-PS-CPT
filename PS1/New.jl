@@ -276,7 +276,7 @@ oli = DataFrame(firm1 = mc_oli[:,1], firm2 = mc_oli[:,2], firm3 = mc_oli[:,3])
 stackoli = stack(oli, 1:3)
 plot(stackoli, y =:value, x =:variable,  kind = "box")
 
-cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:], Actual = MC[:])
+cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:])
 cost_data = stack(cost_data, 1:4)
 
 plot(cost_data, y =:value, x =:variable, kind = "box")
