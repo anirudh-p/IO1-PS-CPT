@@ -183,11 +183,13 @@ function model_elasticity(p, X, β, α, σ_α, ξ, ν)
             δ_2 = transpose(X[m,:,2])*β +ξ[m,2] + α*p[m,2]
             δ_3 = transpose(X[m,:,3])*β +ξ[m,3] + α*p[m,3]
 
-            μ_i = σ_α*p[m,1]*ν[i+l]
+            μ_i1 = σ_α*p[m,1]*ν[i+l]
+            μ_i2 = σ_α*p[m,2]*ν[i+l]
+            μ_i3 = σ_α*p[m,3]*ν[i+l]
 
-            prob[m,i,1] = exp(δ_1+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
-            prob[m,i,2] = exp(δ_2+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
-            prob[m,i,3] = exp(δ_3+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))           
+            prob[m,i,1] = exp(δ_1+μ_i1)/(1+exp(δ_1+μ_i1)+exp(δ_2+μ_i2)+exp(δ_3+μ_i3))     
+            prob[m,i,2] = exp(δ_2+μ_i2)/(1+exp(δ_1+μ_i1)+exp(δ_2+μ_i2)+exp(δ_3+μ_i3))     
+            prob[m,i,3] = exp(δ_3+μ_i3)/(1+exp(δ_1+μ_i1)+exp(δ_2+μ_i2)+exp(δ_3+μ_i3))           
         end
         l=100*m
     end
@@ -277,6 +279,5 @@ stackoli = stack(oli, 1:3)
 plot(stackoli, y =:value, x =:variable,  kind = "box")
 
 cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:])
-cost_data = stack(cost_data, 1:4)
-
+cost_data = stack(cost_data, 1:3)
 plot(cost_data, y =:value, x =:variable, kind = "box")
