@@ -142,7 +142,7 @@ gmm_id = optimize(Objective, parameter_guess,
 #######################
 #1a
 θ_id = [6.948,0.4632,2.734,1.642,0.1643]
-
+#θ_id = [5,1,1,1,1]
 function back_ξ(θ, s, p, X, W, Z, ν_sim)
     δ_guess = rand(100,3)*25
     δ_cm = contraction_map(s, p, δ_guess, θ, ν_sim)
