@@ -78,7 +78,7 @@ MC = γ_0*ones(3) + γ_1*W + γ_2*Z + η
 
 #Equilibrium
 p_guess=rand(Uniform(0,15),3,1)
-p = rand(Uniform(15,30),3,1)
+p = rand(Uniform(0,15),3,1)
 s = zeros(1,3)
 ϵ = zeros(1,3)
 
@@ -90,3 +90,4 @@ while norm(p - p_guess) > 0.01
     p[2,1] = (ϵ[1,2]/(1+ϵ[1,2])) * MC[2]
     p[3,1] = (ϵ[1,3]/(1+ϵ[1,3])) * MC[3]
 end
+
