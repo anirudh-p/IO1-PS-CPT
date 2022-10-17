@@ -72,32 +72,30 @@ function model_elasticity(s_i,α,σ_α,p,ν)
     return s,ϵ
 end
 
-# function model_allelasticity(s_i,α,σ_α,p,ν)
-#     s = zeros(100,3)
-#     ϵ = zeros(100,3)
+function model_allelasticity(s_i,α,σ_α,p,ν)
+    s = zeros(100,3)
+    ϵ = zeros(3,3,100)
+    for m = 1:100
+        α_i = α*ones(100) + σ_α*ν[:,m]
 
-#     for m = 1:100
-#         α_i = α*ones(100) + σ_α*ν[:,m]
+        s[m,1] = mean(s_i[:,1,m])
+        s[m,2] = mean(s_i[:,2,m])
+        s[m,3] = mean(s_i[:,3,m])
 
-#         s[m,1] = mean(s_i[:,1,m])
-#         s[m,2] = mean(s_i[:,2,m])
-#         s[m,3] = mean(s_i[:,3,m])
+        ϵ[1,2,m] = -1*mean(α_i.*s_i[:,1,m].*s_i[:,2,m])*(p[m,1]./s[m,1]) 
+        ϵ[1,3,m] = -1*mean(α_i.*s_i[:,1,m].*s_i[:,3,m])*(p[m,2]./s[m,2])  
+        ϵ[2,3,m] = -1*mean(α_i.*s_i[:,2,m].*s_i[:,3,m])*(p[m,3]./s[m,3])  
 
-#         ϵ[1,2,m] = -1*mean(α_i.*s_i[:,1,m].*s_i[:,2,m])*(p[m,1]./s[m,1]) 
-#         ϵ[1,3,m] = -1*mean(α_i.*s_i[:,1,m].*s_i[:,3,m])*(p[m,2]./s[m,2])  
-#         ϵ[2,3,m] = -1*mean(α_i.*s_i[:,2,m].*s_i[:,3,m])*(p[m,3]./s[m,3])  
+        ϵ[2,1,m] = -1*mean(α_i.*s_i[:,2,m].*s_i[:,1,m])*(p[m,1]./s[m,1]) 
+        ϵ[3,1,m] = -1*mean(α_i.*s_i[:,3,m].*s_i[:,1,m])*(p[m,2]./s[m,2])  
+        ϵ[3,2,m] = -1*mean(α_i.*s_i[:,3,m].*s_i[:,2,m])*(p[m,3]./s[m,3])  
 
-#         ϵ[2,1,m] = -1*mean(α_i.*s_i[:,2,m].*s_i[:,1,m])*(p[m,1]./s[m,1]) 
-#         ϵ[3,1,m] = -1*mean(α_i.*s_i[:,3,m].*s_i[:,1,m])*(p[m,2]./s[m,2])  
-#         ϵ[3,2,m] = -1*mean(α_i.*s_i[:,3,m].*s_i[:,2,m])*(p[m,3]./s[m,3])  
-
-#         ϵ[1,1,m] = -1*mean(α_i.*s_i[:,1,m].*(1 .-s_i[:,1,m]))*(p[m,1]./s[m,1]) 
-#         ϵ[2,2,m] = -1*mean(α_i.*s_i[:,2,m].*(1 .-s_i[:,2,m]))*(p[m,2]./s[m,2])  
-#         ϵ[3,3,m] = -1*mean(α_i.*s_i[:,3,m].*(1 .-s_i[:,3,m]))*(p[m,3]./s[m,3])  
-
-#     end
-#     return s,ϵ
-# end
+        ϵ[1,1,m] = -1*mean(α_i.*s_i[:,1,m].*(1 .-s_i[:,1,m]))*(p[m,1]./s[m,1]) 
+        ϵ[2,2,m] = -1*mean(α_i.*s_i[:,2,m].*(1 .-s_i[:,2,m]))*(p[m,2]./s[m,2])  
+        ϵ[3,3,m] = -1*mean(α_i.*s_i[:,3,m].*(1 .-s_i[:,3,m]))*(p[m,3]./s[m,3])  
+    end
+    return s,ϵ
+end
 
 #Supply
 γ_0 = θ_true[6]
@@ -211,53 +209,7 @@ end
 
 s_isim = model_ind_shares(θ_id[1:3],θ_id[4],θ_id[5],ξ_hat,p,ν_sim)
 s_oli_hat,ϵ_own_hat = model_elasticity(s_isim,θ_id[4],θ_id[5],p,ν_sim)
-s_coll_hat, ϵ_coll_hat = model_crosselasticity(s_isism,θ_id[4],θ_id[5],p,ν_sim)
-
-function model_crosselasticity(p, X, θ, ξ, ν)
-    s_1 = zeros(100)
-    s_2 = zeros(100)
-    s_3 = zeros(100)
-
-    prob = zeros(100,1000,3)
-    l=0
-    for m=1:100
-        for i=1:1000
-            δ_1 = transpose(X[m,:,1])*θ[1:3] +ξ[m,1] + θ[4]*p[m,1]
-            δ_2 = transpose(X[m,:,2])*θ[1:3] +ξ[m,2] + θ[4]*p[m,2]
-            δ_3 = transpose(X[m,:,3])*θ[1:3] +ξ[m,3] + θ[4]*p[m,3]
-
-            μ_i = θ[5]*p[m,1]*ν[i+l]
-
-            prob[m,i,1] = exp(δ_1+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
-            prob[m,i,2] = exp(δ_2+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))     
-            prob[m,i,3] = exp(δ_3+μ_i)/(1+exp(δ_1+μ_i)+exp(δ_2+μ_i)+exp(δ_3+μ_i))           
-        end
-        l=1000*m
-        s_1[m] = sum(prob[m,:,1])/1000
-        s_2[m] = sum(prob[m,:,2])/1000
-        s_3[m] = sum(prob[m,:,3])/1000   
-    end
-
-    ϵ = ones(300,3)
-
-    q=0
-    for m=1:100
-        α_i = θ[4].+θ[5]*ν[q+1:q+1000]
-        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000)
-        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000)
-        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000)
-        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/(1000)
-        ϵ[3*m-2,3] = sum(α_i.*prob[m,:,3])/(1000)
-        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/(1000)
-        ϵ[3*m-1,3] = sum(α_i.*prob[m,:,3])/(1000)
-        ϵ[3*m,1] = sum(α_i.*prob[m,:,1])/(1000)
-        ϵ[3*m,2] = sum(α_i.*prob[m,:,2])/(1000)
-        q=1000*m
-    end
-
-    s = hcat(s_1, s_2, s_3)
-    return ϵ
-end
+s_coll_hat, ϵ_coll_hat = model_allelasticity(s_isim,θ_id[4],θ_id[5],p,ν_sim)
 
 #Marginal Cost (Perfect Competition)
 mc_pc = p
@@ -269,10 +221,9 @@ for m = 1:100
 end
 
 #Marginal Cost (Perfect Collusion)
-ϵ_coll = model_crosselasticity(p, X, θ_id, ξ_hat, ν_sim)
 mc_coll = zeros(100,3)
 for m = 1:100
-    mc_coll[m, :] = p[m,:] + (1 ./ϵ_coll[3*m-2:3*m,:])*s[m,:]
+    mc_coll[m, :] = p[m,:] + inv(ϵ_coll_hat[:,:,m])*s[m,:]
 end
 
 #1b
@@ -284,6 +235,19 @@ oli = DataFrame(firm1 = mc_oli[:,1], firm2 = mc_oli[:,2], firm3 = mc_oli[:,3])
 stackoli = stack(oli, 1:3)
 plot(stackoli, y =:value, x =:variable,  kind = "box")
 
-cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:])
-cost_data = stack(cost_data, 1:3)
+cost_data = DataFrame(Competition = mc_pc[:], Oligopoly = mc_oli[:], Collusion = mc_coll[:], Actual = MC[:])
+cost_data = stack(cost_data, 1:4)
 plot(cost_data, y =:value, x =:variable, kind = "box")
+#######################
+# P3
+#######################
+
+p_merger = zeros(100,3)
+for m = 1:100
+    ϵ_merger = ϵ_coll_hat[:,:,m]
+    ϵ_merger[3,1:2] = [0,0]
+    ϵ_merger[1:2,3] = [0,0]
+    p_merger[m, :] = MC[m,:] - inv(ϵ_merger)*s[m,:]
+end
+
+p_merger

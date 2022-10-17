@@ -364,7 +364,7 @@ plot(cost_data, y =:value, x =:variable, kind = "box")
 
 
 ##P3 Merger
-function model_mergeelasticity(p, X, θ, ξ, ν)
+function model_mergeelasticity(s, p, X, θ, ξ, ν)
     s_1 = zeros(100)
     s_2 = zeros(100)
     s_3 = zeros(100)
@@ -394,12 +394,12 @@ function model_mergeelasticity(p, X, θ, ξ, ν)
     q=0
     for m=1:100
         α_i = θ[4].+θ[5]*ν[q+1:q+1000]
-        ϵ[3*m-2,1] = sum(α_i.*prob[m,:,1].*(ones(1) .- prob[m,:,1]))/(-1000)*(p[m,1]/s_1[m])
-        ϵ[3*m-1,2] = sum(α_i.*prob[m,:,2].*(ones(1) .- prob[m,:,2]))/(-1000)*(p[m,2]/s_1[m])
-        ϵ[3*m,3] = sum(α_i.*prob[m,:,3].*(ones(1) .- prob[m,:,3]))/(-1000)*(p[m,3]/s_1[m])
-        ϵ[3*m-2,2] = sum(α_i.*prob[m,:,2])/1000*(p[m,2]/s_1[m])
+        ϵ[3*m-2,1] = sum(α_i.*s[m,1].*(ones(1) .- s[m,1]))/(-1000)
+        ϵ[3*m-1,2] = sum(α_i.*s[m,2].*(ones(1) .- s[m,2]))/(-1000)
+        ϵ[3*m,3] = sum(α_i.*s[m,3].*(ones(1) .- s[m,3]))/(-1000)
+        ϵ[3*m-2,2] = sum(α_i.*s[m,2])/1000
         ϵ[3*m-2,3] = 0
-        ϵ[3*m-1,1] = sum(α_i.*prob[m,:,1])/1000*(p[m,1]/s_1[m])
+        ϵ[3*m-1,1] = sum(α_i.*s[m,1])/1000
         ϵ[3*m-1,3] = 0
         ϵ[3*m,1] = 0
         ϵ[3*m,2] = 0
@@ -414,11 +414,11 @@ p_merge = ones(100,3)
 s_merge = zeros(100,3)
 ϵ_merge = zeros(100,3)
 
-while norm(p - p_guess) > 0.01 
+while norm(p_merge - p_guess) > 0.01 
     p_guess = p_merge
-    s_merge, ϵ_merge = model_mergeelasticity(p, X, θ_id, ξ_estimate, ν_sim)
+    s_merge, ϵ_merge = model_mergeelasticity(s, p, X, θ_id, ξ_estimate, ν_sim)
     for m = 1:100
-        p_merge[m,:] =  mc_oli[m, :]  + ϵ_merge[3*m-2:3*m,:]*s_merge[m,:]
+        p_merge[m,:] =  mc_oli[m, :]  - inv(ϵ_merge[3*m-2:3*m,:])*s_merge[m,:]
     end
 end
 
