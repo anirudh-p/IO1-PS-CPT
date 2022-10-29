@@ -26,11 +26,36 @@ entryData[:,"N_star"] = entryData.E1 + entryData.E2 + entryData.E3
 (α,β,δ) = (1,1,1)
 
 #Fixed Costs for Firm-Market
-μ = 0.5
-σ = 0.5
+μ = 2
+σ = 1
 d1 = Normal(μ,σ)
-u = rand(d1,100,3)
+n_hat = zeros(100,4,100)
 
-Φ = zeros(100,3) 
-Φ[:,1] = α*entryData[:,Z_1] .+ u[:,1] 
+for t in 1:100
+    u = rand(d1,100,3)
 
+    Φ = zeros(100,3)
+
+    Φ = α*Matrix(entryData[:,2:4]) + u 
+
+
+    #Order firms by fixed costs
+    q = Matrix{Int64}(undef, 100,3)
+    for m in 1:100
+        q[m,:] = sortperm(Φ[m,:])
+    end
+
+    π = zeros(100,3)
+
+    for m in 1:100
+        π[m,q[m,1]] = β*entryData.X[m] - δ*log(1) - Φ[m,q[m,1]]
+        π[m,q[m,2]] = β*entryData.X[m] - δ*log(2) - Φ[m,q[m,2]]
+        π[m,q[m,3]] = β*entryData.X[m] - δ*log(3) - Φ[m,q[m,3]]
+    end
+
+    predentry = (π .>0)
+    n = predentry[:,1]+predentry[:,2] + predentry[:,3]
+    n_hat[:,:,t] = cat(predentry, n, dims = 2)
+end
+
+mean(n_hat, dims=3)
