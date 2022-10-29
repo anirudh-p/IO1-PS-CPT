@@ -1,1 +1,12 @@
-
+using Pkg
+using Random
+using Distributions
+using LinearAlgebra 
+using Optim
+using PlotlyJS
+using DataFrames
+using CSV
+using DataFrames
+using StatsBase
+using Optim
+#using Symbolics
