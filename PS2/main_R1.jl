@@ -92,7 +92,8 @@ gmm_berry = optimize(obj_berry, lower, upper, initial)
 θ_berry = Optim.minimizer(gmm_berry)
 
 
-function sim_tamer(μ, σ, T)
+function sim_tamer(μ, σ, T, data)
+    entryData = data
     (α,β,δ) = (1,1,1)
     d1 = Normal(μ,σ)
     h1_hat = zeros(100,3,100)
@@ -180,4 +181,13 @@ function sim_tamer(μ, σ, T)
     return mean(h1_hat, dims=3),mean(h2_hat,dims=3)
 end
 
-sim_tamer(2,1,100)
+#h1, h2 = sim_tamer(2,1,100, entryData)
+
+function calc_mi(μ, data)
+    σ = 1
+    h1, h2 = sim_tamer(μ, σ, 100, data)
+    Q = (1/T)*sum(norm(Matrix(data[:,5:7])-h1[:,:,1])+norm(Matrix(data[:,5:7])-h2[:,:,1]))
+    return Q
+end
+
+#calc_mi(1, entryData)
