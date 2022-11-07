@@ -91,6 +91,9 @@ upper = [Inf,Inf]
 gmm_berry = optimize(obj_berry, lower, upper, initial)
 θ_berry = Optim.minimizer(gmm_berry)
 
+####################
+# 1.3.2: CT 2009
+####################
 
 function sim_tamer(μ, σ, T, data)
     entryData = data
