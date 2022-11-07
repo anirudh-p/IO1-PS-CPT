@@ -30,12 +30,11 @@ entryData[:,"N_star"] = entryData.E1 + entryData.E2 + entryData.E3
 σ = 1
 
 function sim_berry(μ, σ, T)
-    α,β,δ = 1,1,1
     d1 = Normal(μ,σ)
     n_hat = zeros(100,4,100)
 
     for t in 1:T
-        u = rand(d1,100,3)
+        u = rand(MersenneTwister(t),d1,100,3)
 
         Φ = zeros(100,3)
 
@@ -83,7 +82,7 @@ end
 obj_berry(θ) = transpose(moment_berry(entryData, θ[1], θ[2], 100))*
                          moment_berry(entryData, θ[1],θ[2], 100)
 
-initial = [0.5,3]
+initial = [0.5,0.5]
 lower = [-3,.1]
 upper = [Inf,Inf]
 
