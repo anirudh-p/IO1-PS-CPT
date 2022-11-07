@@ -30,7 +30,7 @@ entryData[:,"N_star"] = entryData.E1 + entryData.E2 + entryData.E3
 σ = 1
 
 function sim_berry(μ, σ, T)
-    (α,β,δ) = (1,1,1)
+    α,β,δ = 1,1,1
     d1 = Normal(μ,σ)
     n_hat = zeros(100,4,100)
 
