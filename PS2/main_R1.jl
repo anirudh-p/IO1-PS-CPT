@@ -142,11 +142,10 @@ function sim_tamer(μ, σ, T, data)
                 end
             end
             if any(>(0), high[m,:])
-                equil = sum(high[m,:])
                 for f in 1:3
-                    if low[m,f] == equil
+                    if low[m,f] == 1
                         low[m,f] = 1
-                    elseif low[m,f] < equil
+                    else
                         low[m,f] = 0
                     end 
                 end
@@ -166,11 +165,10 @@ function sim_tamer(μ, σ, T, data)
                 end
             end
             if any(>(0), high[m,:])
-                equil = sum(high[m,:])
                 for f in 1:3
-                    if low[m,f] == equil
+                    if low[m,f] == 1
                         low[m,f] = 1
-                    elseif low[m,f] < equil
+                    else
                         low[m,f] = 0
                     end 
                 end
@@ -201,12 +199,11 @@ min_mi = Optim.minimum(res)
 c0 = 1.25 * min_mi
 
 # Find initial confidence region by evaluating the obj in a grid of 51 points (-1 to 4)
-MU = -1:0.1:4 
-MU_I = zeros(51)
-for i in 1:51
-    MU_I[i] = calc_mi(MU[i],entryData,100)
+function calc_mi2(μ)
+    calc_mi(μ,entryData, 100)
 end
-MU_I = MU_I[MU_I .<= c0] 
+MU = -1:0.1:4 
+MU_I = MU[calc_mi2.(MU) .<= c0] 
 μ0_lb = minimum(MU_I)
 μ0_ub = maximum(MU_I)
 
@@ -220,14 +217,18 @@ M = 100
 B = 100
 
 # Write a function subsample(data, size) to generate subsamples from data of a particular size
-
+function subsample(data, m, b)
+    selec = rand(MersenneTwister(b),1:100,m)
+    sub_data = data[selec, :]
+    return sub_data
+end
 function calc_mi_subsample(MU_I, data, M, b)
     m = Int64(M/4)
-    sub_data = rand(MersenneTwister(b),1:100,25)
-    obj_values = map(μ -> calc_mi(μ, data[sub_data,:],m), MU_I) #Calculate a_n Q_n(μ, sub_data) for all μ in μ_I
+    sub_data = subsample(data, m, b)
+    obj_values = map(μ -> calc_mi(μ, sub_data,m), MU_I) #Calculate a_n Q_n(μ, sub_data) for all μ in μ_I
     max_mi_sub = maximum(obj_values) # C_n = sup_{μ ∈ μ_I} a_n Q_n(μ, sub_data)
     min_mi_sub = minimum(obj_values) # to correct for misspecification
-    return (max_mi_sub - min_mi_sub)*m 
+    return (max_mi_sub - min_mi_sub) 
 end
 
 # Take 1/4 the 95th percentile and set equal to c1 to compute 95% CI (1/4
@@ -236,14 +237,26 @@ c1_subsamples = zeros(100)
 for b=1:B
     c1_subsamples[b] = calc_mi_subsample(MU_I, entryData, M, b)
 end
-c1 = 1/4 * quantile(c1_subsamples, 0.95)
+c1 = (1/4)*quantile(c1_subsamples, 0.95)
 
 # compute ci1 using Ciliberto and Tamer's estimator modified for
 # misspecification
-MU_I = MU[calc_mi.(MU) - min_mi  .<= c1]
-μ1_lb = minimum(MU_I)
-μ1_ub = maximum(MU_I)
+MU_I1 = MU[calc_mi2.(MU) .- min_mi .<= c1] 
+μ1_lb = minimum(MU_I1)
+μ1_ub = maximum(MU_I1)
 
 #Last, repeat the subsampling procedure a few times to update the bounds
 #further. In doing so, use a finer grid to obtain more accurate bounds (e.g.,
 #MU = -1:0.025:4).
+
+c2_subsamples = zeros(100)
+for b=1:B
+    c2_subsamples[b] = calc_mi_subsample(MU_I1, entryData, M, b)
+end
+c2 = (1/4)*quantile(c2_subsamples, 0.95)
+
+# compute ci1 using Ciliberto and Tamer's estimator modified for
+# misspecification
+MU_I2 = MU[calc_mi2.(MU) .- min_mi .<= c2] 
+μ2_lb = minimum(MU_I2)
+μ2_ub = maximum(MU_I2)
