@@ -23,7 +23,7 @@ rename!(entryData,Symbol.(column_names))
 entryData[:,"N_star"] = entryData.E1 + entryData.E2 + entryData.E3
 
 #True Parameters
-(α,β,δ) = (1,1,1)
+(α,β,δ) = 1,1,1
 
 #Fixed Costs for Firm-Market
 μ = 2
@@ -80,11 +80,10 @@ function moment_berry(entryData, μ, σ, T)
     return vec(moments)
 end
 
-obj_berry(θ) = transpose(moment_berry(entryData, θ[1], θ[2], 100))*moment_berry(entryData, θ[1], 
-θ[2], 100)
+obj_berry(θ) = transpose(moment_berry(entryData, θ[1], θ[2], 100))*
+                         moment_berry(entryData, θ[1],θ[2], 100)
 
-obj_berry([.5,.5])
-initial = [.5,.5]
+initial = [0.5,3]
 lower = [-3,.1]
 upper = [Inf,Inf]
 
@@ -95,6 +94,7 @@ gmm_berry = optimize(obj_berry, lower, upper, initial)
 # 1.3.2: CT 2009
 ####################
 
+# Simulation for H1 and H2 
 function sim_tamer(μ, σ, T, data)
     entryData = data
     s = size(entryData)[1]
@@ -185,37 +185,30 @@ function sim_tamer(μ, σ, T, data)
     return mean(h1_hat, dims=3),mean(h2_hat,dims=3)
 end
 
-#h1, h2 = sim_tamer(2,1,100, entryData)
-
-function calc_mi(μ, data)
+# Generating the Objective Function 
+function calc_mi(μ, data,T)
     σ = 1
-    h1, h2 = sim_tamer(μ, σ, 100, data)
+    h1, h2 = sim_tamer(μ, σ, T, data)
     Q = (1/T)*sum(norm(Matrix(data[:,5:7])-h1[:,:,1])+norm(Matrix(data[:,5:7])-h2[:,:,1]))
     return Q
 end
 
-calc_mi(1, entryData)
 # Let min_mi be the minimized value of the objective calc_mi(μ; data) = a_n Q_n(μ, data)
-
-res = optimize(μ -> calc_mi(μ, entryData), .5, 4)
+res = optimize(μ -> calc_mi(μ, entryData,100), .5, 4)
 min_mi = Optim.minimum(res)
 
 # Define c0 as the 1.25*min_mi following Ciliberto-Tamer
-
 c0 = 1.25 * min_mi
 
-# Find initial confidence region by evaluating the obj function in a grid
-# of 50 points (from -1 to 4.0)
-#calc_mi = μ -> calc_mi(μ, entryData)
+# Find initial confidence region by evaluating the obj in a grid of 51 points (-1 to 4)
 MU = -1:0.1:4 
 MU_I = zeros(51)
 for i in 1:51
-    MU_I[i] = calc_mi(MU[i],entryData)
+    MU_I[i] = calc_mi(MU[i],entryData,100)
 end
 MU_I = MU_I[MU_I .<= c0] 
 μ0_lb = minimum(MU_I)
 μ0_ub = maximum(MU_I)
-
 
 # Generate subsamples with a subsample size of M/4 following Ciliberto-Tamer
 # Compute max value of the obj function of each subsample over initial 
@@ -228,20 +221,21 @@ B = 100
 
 # Write a function subsample(data, size) to generate subsamples from data of a particular size
 
-
-function calc_mi_subsample(MU_I, data, M)
+function calc_mi_subsample(MU_I, data, M, b)
     m = Int64(M/4)
-    sub_data = sample(1:M, m, replace =false)
-    obj_values = map(μ -> calc_mi(μ, data[sub_data,:]), MU_I) #Calculate a_n Q_n(μ, sub_data) for all μ in μ_I
+    sub_data = rand(MersenneTwister(b),1:100,25)
+    obj_values = map(μ -> calc_mi(μ, data[sub_data,:],m), MU_I) #Calculate a_n Q_n(μ, sub_data) for all μ in μ_I
     max_mi_sub = maximum(obj_values) # C_n = sup_{μ ∈ μ_I} a_n Q_n(μ, sub_data)
     min_mi_sub = minimum(obj_values) # to correct for misspecification
-    return max_mi_sub - min_mi_sub 
+    return (max_mi_sub - min_mi_sub)*m 
 end
 
 # Take 1/4 the 95th percentile and set equal to c1 to compute 95% CI (1/4
 # because #subsample=M/4)
-
-c1_subsamples = map(calc_mi_subsample(MU_I, entryData, M), 1:B)
+c1_subsamples = zeros(100)
+for b=1:B
+    c1_subsamples[b] = calc_mi_subsample(MU_I, entryData, M, b)
+end
 c1 = 1/4 * quantile(c1_subsamples, 0.95)
 
 # compute ci1 using Ciliberto and Tamer's estimator modified for
