@@ -11,3 +11,6 @@ gen p4 = 0
 gen p6 = 0
 gen p7 = 0
 gen p8 = 0
+
+*Export the Updated file as a new CSV file
+export delimited using entryData_updated.csv, replace
