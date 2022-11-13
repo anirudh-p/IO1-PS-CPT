@@ -15,6 +15,30 @@ entryData = DataFrame(CSV.read("PS2/entryData.csv",DataFrame, header=false))
 column_names = ["X", "Z_1", "Z_2", "Z_3", "E1", "E2", "E3"]
 rename!(entryData,Symbol.(column_names))
 
+#Update Dataset with Configuration Types
+entryData[:,"config_type"] = zeros(100)
+for i=1:100
+    if Vector(entryData[i,5:7]) == [1, 0, 0]
+        entryData[i,"config_type"] = 1 
+    elseif Vector(entryData[i,5:7]) == [0, 1, 0]
+        entryData[i,"config_type"] = 2 
+    elseif Vector(entryData[i,5:7]) == [0, 0, 1]
+        entryData[i,"config_type"] = 3 
+    elseif Vector(entryData[i,5:7]) == [1, 1, 0]
+        entryData[i,"config_type"] = 4
+    elseif Vector(entryData[i,5:7]) == [0, 1, 1]
+        entryData[i,"config_type"] = 5
+    elseif Vector(entryData[i,5:7]) == [1, 0, 1]
+        entryData[i,"config_type"] = 6
+    elseif Vector(entryData[i,5:7]) == [1, 1, 1]
+        entryData[i,"config_type"] = 7 
+    else Vector(entryData[i,5:7]) == [0, 0, 0]
+        entryData[i,"config_type"] = 8
+    end
+end
+
+CSV.write("PS2/config_type.csv",entryData)
+
 ####################
 # 1.3.1: Berry 1992
 ####################
@@ -82,7 +106,7 @@ end
 obj_berry(θ) = transpose(moment_berry(entryData, θ[1], θ[2], 100))*
                          moment_berry(entryData, θ[1],θ[2], 100)
 
-initial = [0.5,0.5]
+initial = [3,1.5]
 lower = [-3,.1]
 upper = [Inf,Inf]
 
