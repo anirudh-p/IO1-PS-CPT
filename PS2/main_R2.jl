@@ -125,8 +125,9 @@ function sim_tamer(μ, σ, T, data)
     s = size(entryData)[1]
     (α,β,δ) = (1,1,1)
     d1 = Normal(μ,σ)
-    h1_hat = zeros(s,3,T)
-    h2_hat = zeros(s,3,T)
+
+    lb = zeros(s,8,T)
+    ub = zeros(s,8,T)
     for t in 1:T
         u = rand(d1,s,3)
 
@@ -134,90 +135,100 @@ function sim_tamer(μ, σ, T, data)
 
         Φ = α*Matrix(entryData[:,2:4]) + u 
 
-
         #Calculate profits
         Π = zeros(8,3)
-        high = zeros(s, 3)
-        low = zeros(s, 3)
         for m in 1:s
-            Π[1,1] = β*entryData.X[m] - δ*log(3) - Φ[m,1]
-            Π[1,2] = β*entryData.X[m] - δ*log(3) - Φ[m,2]
-            Π[1,3] = β*entryData.X[m] - δ*log(3) - Φ[m,3]
+            Π[1,1] = β*entryData.x[m] - δ*log(3) - Φ[m,1]
+            Π[1,2] = β*entryData.x[m] - δ*log(3) - Φ[m,2]
+            Π[1,3] = β*entryData.x[m] - δ*log(3) - Φ[m,3]
             if all(>=(0),Π[1,:])
-                high[m,:] = ones(1,3)
-                low[m,:] = ones(1,3)
+                ub[m,7,t] = 1
+                lb[m,7,t] = 1
                 continue
             end
             #firms 2&3 enter
             Π[2,1] = 0
-            Π[2,2] = β*entryData.X[m] - δ*log(2) - Φ[m,2]
-            Π[2,3] = β*entryData.X[m] - δ*log(2) - Φ[m,3]
+            Π[2,2] = β*entryData.x[m] - δ*log(2) - Φ[m,2]
+            Π[2,3] = β*entryData.x[m] - δ*log(2) - Φ[m,3]
             #firms 1&3 enter
-            Π[3,1] = β*entryData.X[m] - δ*log(2) - Φ[m,1]
+            Π[3,1] = β*entryData.x[m] - δ*log(2) - Φ[m,1]
             Π[3,2] = 0
-            Π[3,3] = β*entryData.X[m] - δ*log(2) - Φ[m,3]
+            Π[3,3] = β*entryData.x[m] - δ*log(2) - Φ[m,3]
             #firms 1&2 enter
-            Π[4,1] = β*entryData.X[m] - δ*log(2) - Φ[m,1]
-            Π[4,2] = β*entryData.X[m] - δ*log(2) - Φ[m,2]
+            Π[4,1] = β*entryData.x[m] - δ*log(2) - Φ[m,1]
+            Π[4,2] = β*entryData.x[m] - δ*log(2) - Φ[m,2]
             Π[4,3] = 0
-            for f in 1:3 
-                if all(>=(0), Π[f+1,:]) && Π[1,f] >= 0
-                    high[m,1:end .!=f] = ones(1,2)
-                    low[m,1:end .!=f] .+= ones(2,1)
-                end
+            
+            if all(>=(0), Π[4,:]) && Π[1,3] <= 0
+                ub[m,4,t] = 1
+                lb[m,4,t] = 1
             end
-            if any(>(0), high[m,:])
+            if all(>=(0), Π[2,:]) && Π[1,1] <= 0
+                ub[m,5,t] = 1
+                lb[m,5,t] = 1
+            end
+            if all(>=(0), Π[3,:]) && Π[1,2] <= 0
+                ub[m,6,t] = 1
+                lb[m,6,t] = 1
+            end
+            
+            if any(>(0), ub[m,:,t])
                 for f in 1:3
-                    if low[m,f] == 1
-                        low[m,f] = 1
+                    if sum(lb[m,:,t]) == 1 && lb[m,3+f,t] == 1
+                        lb[m,3+f,t] = 1
                     else
-                        low[m,f] = 0
+                        lb[m,3+f,t] = 0
                     end 
                 end
                 continue
             end
             #firm 1 enters
-            Π[5,1] = β*entryData.X[m] - δ*log(1) - Φ[m,1]
+            Π[5,1] = β*entryData.x[m] - δ*log(1) - Φ[m,1]
             #firm 2 enters
-            Π[6,2] = β*entryData.X[m] - δ*log(1) - Φ[m,2]
+            Π[6,2] = β*entryData.x[m] - δ*log(1) - Φ[m,2]
             #firm 3 enters
-            Π[7,3] = β*entryData.X[m] - δ*log(1) - Φ[m,3]
+            Π[7,3] = β*entryData.x[m] - δ*log(1) - Φ[m,3]
 
             for f in 1:3
                 if Π[f+4,f] >= 0 && all(<=(0),Π[2:4,f])
-                    high[m,f] = 1
-                    low[m,f] += 1
+                    ub[m,f,t] = 1
+                    lb[m,f,t] = 1
                 end
             end
-            if any(>(0), high[m,:])
+            if any(>(0), ub[m,:,t])
                 for f in 1:3
-                    if low[m,f] == 1
-                        low[m,f] = 1
+                    if sum(lb[m,:,t]) == 1 && lb[m,f,t] == 1
+                        lb[m,f,t] = 1
                     else
-                        low[m,f] = 0
+                        lb[m,f,t] = 0
                     end 
                 end
                 continue
             end
         end
-        
-        h1_hat[:,:,t] = low
-        h2_hat[:,:,t] = high
     end
-
-    return mean(h1_hat, dims=3),mean(h2_hat,dims=3)
+    return mean(lb, dims=3),mean(ub,dims=3)
 end
 
 # Generating the Objective Function 
-function calc_mi(μ, data,T)
+function calc_mi(μ, data,N)
     σ = 1
-    h1, h2 = sim_tamer(μ, σ, T, data)
-    Q = (1/T)*sum(norm(Matrix(data[:,5:7])-h1[:,:,1])+norm(Matrix(data[:,5:7])-h2[:,:,1]))
-    return Q
+
+    p = Matrix(entryData_updated[:,["p1","p2","p3","p4","p5","p6","p7","p8"]]) #Careful about the Order
+    h1,h2 = sim_tamer(μ,σ,100,data)
+
+    h1_diff = zeros(100)
+    h2_diff = zeros(100)
+    for m=1:N
+        h1_diff[m] = norm(p[m,:]-h1[m,:,1]) 
+        h2_diff[m] = norm(p[m,:]-h2[m,:,1])
+    end
+    Q = (1/N)*[sum(h1_diff)+sum(h2_diff)]
+    return Q[1]
 end
 
 # Let min_mi be the minimized value of the objective calc_mi(μ; data) = a_n Q_n(μ, data)
-res = optimize(μ -> calc_mi(μ, entryData,100), .5, 4)
+res = optimize(μ -> calc_mi(μ, entryData_updated,100), -1.0, 4.0)
 min_mi = Optim.minimum(res)
 
 # Define c0 as the 1.25*min_mi following Ciliberto-Tamer
@@ -225,7 +236,7 @@ c0 = 1.25 * min_mi
 
 # Find initial confidence region by evaluating the obj in a grid of 51 points (-1 to 4)
 function calc_mi2(μ)
-    calc_mi(μ,entryData, 100)
+    calc_mi(μ,entryData_updated, 100)
 end
 MU = -1:0.1:4 
 MU_I = MU[calc_mi2.(MU) .<= c0] 
@@ -252,7 +263,7 @@ function calc_mi_subsample(MU_I, data, M, b)
     sub_data = subsample(data, m, b)
     obj_values = map(μ -> calc_mi(μ, sub_data,m), MU_I) #Calculate a_n Q_n(μ, sub_data) for all μ in μ_I
     max_mi_sub = maximum(obj_values) # C_n = sup_{μ ∈ μ_I} a_n Q_n(μ, sub_data)
-    min_mi_sub = minimum(obj_values) # to correct for misspecification
+    min_mi_sub = Optim.minimum(optimize(μ -> calc_mi(μ, entryData_updated,m), -1.0, 4.0)) # to correct for misspecification
     return (max_mi_sub - min_mi_sub) 
 end
 
@@ -260,7 +271,7 @@ end
 # because #subsample=M/4)
 c1_subsamples = zeros(100)
 for b=1:B
-    c1_subsamples[b] = calc_mi_subsample(MU_I, entryData, M, b)
+    c1_subsamples[b] = calc_mi_subsample(MU_I, entryData_updated, M, b)
 end
 c1 = (1/4)*quantile(c1_subsamples, 0.95)
 
@@ -276,7 +287,7 @@ MU_I1 = MU[calc_mi2.(MU) .- min_mi .<= c1]
 
 c2_subsamples = zeros(100)
 for b=1:B
-    c2_subsamples[b] = calc_mi_subsample(MU_I1, entryData, M, b)
+    c2_subsamples[b] = calc_mi_subsample(MU_I1, entryData_updated, M, b)
 end
 c2 = (1/4)*quantile(c2_subsamples, 0.95)
 
