@@ -9,5 +9,6 @@ File Description
 5) entryData_updated.csv : Cleaned Dataset 
 6) main_R2.jl            : Final Submission (R1 contains earlier version)
 7) pset2.pdf             : Original PS2
+8) CPT_PS2_Write-Up      : Final Submission of the Write-Up
 
 ###################
