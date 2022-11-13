@@ -37,6 +37,7 @@ for i=1:100
     end
 end
 
+#Save the dataframe to perform Logit for Configuration Predictions Later
 CSV.write("PS2/config_type.csv",entryData)
 
 ####################
@@ -116,7 +117,7 @@ gmm_berry = optimize(obj_berry, lower, upper, initial)
 ####################
 # 1.3.2: CT 2009
 ####################
-
+entryData_updated = DataFrame(CSV.read("PS2/entryData_updated.csv",DataFrame, header=true))
 # Simulation for H1 and H2 
 function sim_tamer(μ, σ, T, data)
     entryData = data

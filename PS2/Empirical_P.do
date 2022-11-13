@@ -1,16 +1,19 @@
+*Change Directory
+cd "C:\Users\aniru\Documents\GitHub\IO1-PS-CPT\PS2"
+
 *Importing entryData to calculate configuration Probabilities
-import delimited entryData.csv, clear
+import delimited config_type.csv, clear
 
 *Run a simple Multinomial Logit model to estimate conditional Probabilites
-mlogit y X Z_1 Z_2 Z_3, baseoutcome(7)
+mlogit config_type x z_1 z_2 z_3, baseoutcome(7)
 
 *Predict Probabilities
-predict p1 p2 p3 p5
+predict p1 p4 p7 p8
 
-gen p4 = 0
+gen p2 = 0
+gen p3 = 0
+gen p5 = 0
 gen p6 = 0
-gen p7 = 0
-gen p8 = 0
 
 *Export the Updated file as a new CSV file
 export delimited using entryData_updated.csv, replace
