@@ -56,7 +56,7 @@ entryData[:,"N_star"] = entryData.E1 + entryData.E2 + entryData.E3
 
 function sim_berry(μ, σ, T)
     d1 = Normal(μ,σ)
-    n_hat = zeros(100,4,100)
+    n_hat = zeros(100,4,T)
 
     for t in 1:T
         u = rand(MersenneTwister(t),d1,100,3)
@@ -92,7 +92,8 @@ end
 
 function moment_berry(entryData, μ, σ, T)
     N_hat = sim_berry(μ, σ, T)
-    N_star = Matrix(entryData[:,5:8])
+    # column 8 is configuration
+    N_star = Matrix(entryData[:,[5,6,7,9]])
     ν = N_star-N_hat
 
     m1 = transpose(Matrix(entryData[:,1:2]))*ν[:,1]
@@ -228,7 +229,7 @@ function calc_mi(μ, data,N)
 end
 
 # Let min_mi be the minimized value of the objective calc_mi(μ; data) = a_n Q_n(μ, data)
-res = optimize(μ -> calc_mi(μ, entryData_updated,100), -1.0, 4.0)
+res = @time optimize(μ -> calc_mi(μ, entryData_updated,100), -1.0, 4.0)
 min_mi = Optim.minimum(res)
 
 # Define c0 as the 1.25*min_mi following Ciliberto-Tamer
@@ -238,7 +239,7 @@ c0 = 1.25 * min_mi
 function calc_mi2(μ)
     calc_mi(μ,entryData_updated, 100)
 end
-MU = -1:0.1:4 
+MU = -1:0.01:4 
 MU_I = MU[calc_mi2.(MU) .<= c0] 
 μ0_lb = minimum(MU_I)
 μ0_ub = maximum(MU_I)
