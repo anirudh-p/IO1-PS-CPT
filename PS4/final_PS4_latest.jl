@@ -8,7 +8,7 @@ using StatsBase
 using Expectations
 using Parameters
 
-Random.seed!(923)
+Random.seed!(612)
 #Set up the Parameters
 β = 0.9;
 μ = -1;
@@ -50,8 +50,8 @@ vf2 = VFI2(μ, R)
 
 d1 = Gumbel()
 draw = rand(d1, 40000)
-ϵ1 = draw[1:20000]
-ϵ0 = draw[20001:40000]
+ϵ0 = draw[1:20000]
+ϵ1 = draw[20001:40000]
 
 a_obs2 = zeros(20001)
 a_obs2[1] = 1
@@ -116,5 +116,6 @@ p = LL(-1,-3, i_obs2, a_obs2)
 neg_LL_data(θ) = -1*LL(θ[1],θ[2],i_obs2,a_obs2) #Multiplied by -1 since we need to MAXIMIZE LL
 
 outer = optimize(neg_LL_data,θ_init)
-
 θ_est = Optim.minimizer(outer)
+
+q = LL(θ_est[1],θ_est[2],i_obs2, a_obs2) #Check the value is indeed higher than some other value of parameter
