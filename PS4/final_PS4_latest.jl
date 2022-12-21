@@ -3,16 +3,12 @@ using Random
 using Distributions
 using LinearAlgebra 
 using Optim
-using PlotlyJS
-using DataFrames
-using CSV
 using DataFrames
 using StatsBase
-using Optim
 using Expectations
 using Parameters
 
-Random.seed!(100)
+Random.seed!(923)
 #Set up the Parameters
 β = 0.9;
 μ = -1;
@@ -57,8 +53,6 @@ draw = rand(d1, 40000)
 ϵ1 = draw[1:20000]
 ϵ0 = draw[20001:40000]
 
-######################
-# Deterministic states
 a_obs2 = zeros(20001)
 a_obs2[1] = 1
 i_obs2 = zeros(20000)
@@ -85,48 +79,42 @@ count(i -> (i==5), a_obs2) #Check there is some variation in the data
 ###################################
 
 #Question 5.a: Guess Initial Parameter (μ,R)
-init_θ = Inputs(-0.5,-3.5)
+θ_init = [-5.5,-7.5]
 
 #Step 5.b: Run the VFI
-VFI2(init_θ)
+VFI2(μ,R)
 
 #Step 5.c: Estime the LL using the EV distribution of the Errors and the formula
 #The probabilities of observing each choice
-prob2 = zeros(5,2)
-
-for a in 1:5
-    prob2[a,1] = exp(vf2[a,1])/(exp(vf2[a,1]) + exp(vf2[a,2]))
-    prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
-end
-
-function LL(θ, i_obs, a_obs)
-    vf = VFI2(θ)                #Combined Steps a, b and c by including the VFI(guess_θ) inside this inner loop
+function LL(μ,R, i_obs, a_obs)
+    vf = VFI2(μ,R)                #Combined Steps a, b and c by including the VFI(guess_θ) inside this inner loop
     num = zeros(20000)
     den = zeros(20000)
 
     for i in 1:20000
-        if i_obs2[i] == 0.0
-            d = 2
+        if i_obs2[i] == 0
+            d = 2                 # Non-Renewal
         else
-            d = 1
+            d = 1                 # Renewal
         end
         Π = i_obs[i] * (R + ϵ1[i]) + (1-i_obs[i])*(μ*a_obs[i] + ϵ0[i])
 
-        num[i] = -1 * ( β*vf[Int(a_obs[i]),d]  + Π )    #Numerator of obs i is a function of the state at i and decision at i
-        den[i] = -1 * ((β*vf[Int(a_obs[i]),1] + R + ϵ1[i]) + (β*vf[Int(a_obs[i]),2] + μ*a_obs[i] + ϵ0[i]))
+        num[i] = exp( β*vf[Int(a_obs[i]),d]  + Π )    #Num of obs i is a function of the state at i and decision at i
+        den[i] = exp((β*vf[Int(a_obs[i]),1] + R + ϵ1[i])) + exp(β*vf[Int(a_obs[i]),2] + μ*a_obs[i] + ϵ0[i])
     end
 
-    #Both Numerator and Denominator Multiplied by -1 to prevent negative values in log
-
-    return sum(num)  - sum(log.(den))
+    return sum(log.(num)) - sum(log.(den))
 end
 
-θ_prime = Inputs(-1,-5)
-p = LL(θ_prime, i_obs2, a_obs2)
+p = LL(-1,-3, i_obs2, a_obs2)
 
 ###################################
 #QUESTION 5.4: OUTER NXFP LOOP
 ###################################
 
 #Step 5.d: Run the Inner loop over a set of parameter to maximize LL
-optimize(LL,init_guess)
+neg_LL_data(θ) = -1*LL(θ[1],θ[2],i_obs2,a_obs2) #Multiplied by -1 since we need to MAXIMIZE LL
+
+outer = optimize(neg_LL_data,θ_init)
+
+θ_est = Optim.minimizer(outer)
