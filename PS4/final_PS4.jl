@@ -30,7 +30,7 @@ a = [1,2,3,4,5] #Note: We have a small, finite set of possible states: a_t = 1,2
     R::Float64 = -3 # Replacement Cost
 end
 
-init_θ = Inputs(-1,-3)
+θ = Inputs(-1,-3)
 
 function VFI2(θ, max_iter = 500, tol = 1e-6)
 
@@ -42,8 +42,8 @@ function VFI2(θ, max_iter = 500, tol = 1e-6)
     while err > tol && i < max_iter
         for a = 1:5
             j = min(a+1,5)
-            v[a,1] = R + β*log(exp(vprev[1,1]) + exp(vprev[1,2]) ) 
-            v[a,2] = μ*j + β*log( exp(vprev[j,2]) + exp(vprev[j,1] ) ) 
+            v[a,1] = R + β*log(exp(vprev[1,1]) + exp(vprev[1,2]) )  # Left Column (Indexed 1) is Renewal
+            v[a,2] = μ*j + β*log( exp(vprev[j,2]) + exp(vprev[j,1] ) ) #Right Column (Indexed 2) is Non-Renewal
         end
 
         err = norm(v-vprev)
@@ -53,7 +53,7 @@ function VFI2(θ, max_iter = 500, tol = 1e-6)
     return vprev
 end
 
-vf2 = VFI2(init_θ)
+vf2 = VFI2(θ) 
 
 ###################################
 #STEP 2: DATA SIMULATION 
@@ -74,15 +74,38 @@ for i in 1:20000
     end
 end
 
+######################
+# Deterministic states
+a_obs2 = zeros(20001)
+a_obs2[1] = 1
+i_obs2 = zeros(20000)
+
+for i in 1:20000
+    #Current Decision based on Current State VF (LHS is V1, RHS is V0)
+    if R + ϵ1[i] + β*vf2[Int(a_obs2[i]),1] > μ*a_obs2[i] + ϵ0[i] + β*vf2[Int(a_obs2[i]),2] 
+        i_obs2[i] = 1
+    else
+        i_obs2[i] = 0
+    end
+    #Next State based on Current Decision
+    if i_obs2[i] == 1
+        a_obs2[i+1] = 1
+    else 
+        a_obs2[i+1] = min(5,a_obs2[i]+1)
+    end
+end
+
+count(i -> (i==5), a_obs2) #Check there is some variation in the data
+
 ###################################
 #QUESTION 5.1: INNER NXFP LOOP
 ###################################
 
 #Step 5.a: Guess Parameter (μ,R)
-init_θ = (0,0)
+init_θ = Inputs(0,0)
 
-#Step 5.b: Estimate Dynamic Logit Probability using V(1), V(0) and VFI
-VFI2(θ)
+#Step 5.b: Run the VFI
+VFI2(init_θ)
 
 #Step 5.c: Estime the LL using the EV distribution of the Errors and the formula
 #The probabilities of observing each choice
@@ -93,8 +116,29 @@ for a in 1:5
     prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
 end
 
-P(μ,R) = sum( u() +  )
+function P(θ, i_obs, a_obs)
+    vf = VFI2(θ)                #Combined Steps b and c by including the VFI inside this inner loop
+    for i in 1:20000
+        if i_obs2[i] == 0.0
+            d = 2
+        else
+            d = 1
+        end
+        Π = i_obs[i] * (R + ϵ1[i]) + (1-i_obs[i])*(μ*a_obs[i] + ϵ0[i])
 
+        nume = zeros(20000)
+        den = zeros(20000)
+
+        nume[i] = β*vf[Int(a_obs[i]),d]  + Π                                                   #Numerator of obs i is a function of the state at i and decision at i
+        den[i] = (β*vf[Int(a_obs[i]),1] + R + ϵ1[i]) + (β*vf[Int(a_obs[i]),2] + μ*a_obs[i] + ϵ0[i]) 
+    end
+
+    print(nume)
+    #sum(numerator)  - sum(log(denominator))
+end
+
+θ_prime = Inputs(-1,-5)
+temp = P(θ_prime, i_obs2, a_obs2)
 ###################################
 #QUESTION 5.4: OUTER NXFP LOOP
 ###################################
