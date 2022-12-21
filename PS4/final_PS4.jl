@@ -19,19 +19,21 @@ Random.seed!(612)
 R = -3;
 
 ###################################
-#STEP 1: VALUE FUNCTION ITERATION
+#QUESTION 3: VALUE FUNCTION ITERATION
 ###################################
 
-#Step 1.1: Set up the grid of possible state variables 
+#Set up the grid of possible state variables 
 a = [1,2,3,4,5] #Note: We have a small, finite set of possible states: a_t = 1,2,3,4,5
 
+#set up the parameter input structure
 @with_kw struct Inputs
     μ::Float64 = -1 #Mean Transition Cost
     R::Float64 = -3 # Replacement Cost
 end
 
-θ = Inputs(-1,-3)
+θ = Inputs(-1,-3) #Test
 
+# Main Value Function Iteration (VFI)
 function VFI2(θ, max_iter = 500, tol = 1e-6)
 
     @unpack μ, R = θ
@@ -56,7 +58,7 @@ end
 vf2 = VFI2(θ) 
 
 ###################################
-#STEP 2: DATA SIMULATION 
+#QUESTION 4: DATA SIMULATION 
 ###################################
 
 d1 = Gumbel()
@@ -101,8 +103,8 @@ count(i -> (i==5), a_obs2) #Check there is some variation in the data
 #QUESTION 5.1: INNER NXFP LOOP
 ###################################
 
-#Step 5.a: Guess Parameter (μ,R)
-init_θ = Inputs(0,0)
+#Question 5.a: Guess Initial Parameter (μ,R)
+init_θ = Inputs(-0.5,-3.5)
 
 #Step 5.b: Run the VFI
 VFI2(init_θ)
@@ -139,6 +141,7 @@ end
 
 θ_prime = Inputs(-1,-5)
 temp = P(θ_prime, i_obs2, a_obs2)
+
 ###################################
 #QUESTION 5.4: OUTER NXFP LOOP
 ###################################
