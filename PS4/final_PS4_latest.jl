@@ -32,7 +32,7 @@ function VFI2(μ, R, max_iter = 500, tol = 1e-6)
         for a = 1:5
             j = min(a+1,5)
             v[a,1] = R + β*log(exp(vprev[1,1]) + exp(vprev[1,2]) )  # Left Column (Indexed 1) is Renewal
-            v[a,2] = μ*j + β*log( exp(vprev[j,2]) + exp(vprev[j,1] ) ) #Right Column (Indexed 2) is Non-Renewal
+            v[a,2] = μ*a + β*log( exp(vprev[j,2]) + exp(vprev[j,1] ) ) #Right Column (Indexed 2) is Non-Renewal
         end
 
         err = norm(v-vprev)
