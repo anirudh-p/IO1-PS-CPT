@@ -10,6 +10,7 @@ using DataFrames
 using StatsBase
 using Optim
 
+Random.seed!(612)
 #Set up the Parameters
 β = 0.9;
 μ = -1;
@@ -71,7 +72,60 @@ function VFI(μ, R, max_iter = 500, tol = 1e-6)
     return vprev
 end
 
-VFI(-3,-1)
+
+function VFI2(μ, R, max_iter = 500, tol = 1e-6)
+
+    v = rand(5,2)
+    vprev = zeros(5,2)
+    err = 1
+    i = 1
+    while err > tol && i < max_iter
+        for a = 1:5
+            j = min(a+1,5)
+            v[a,1] = R + β*log(exp(vprev[1,1]) + exp(vprev[1,2]) ) 
+            v[a,2] = μ*j + β*log( exp(vprev[j,2]) + exp(vprev[j,1] ) ) 
+        end
+
+        err = norm(v-vprev)
+        vprev = copy(v)
+        i = i+1
+    end
+    return vprev
+end
+
+vf1 = VFI(-1,-3)
+vf2 = VFI2(-1,-3)
+
+
+#The probabilities of observing each choice
+prob1 = zeros(5,2)
+prob2 = zeros(5,2)
+for a in 1:5
+    prob1[a,1] = exp(vf1[a,1])/(exp(vf1[a,1]) + exp(vf1[a,2]))
+    prob1[a,2] = exp(vf1[a,2])/(exp(vf1[a,1]) + exp(vf1[a,2]))
+end
+
+for a in 1:5
+    prob2[a,1] = exp(vf2[a,1])/(exp(vf2[a,1]) + exp(vf2[a,2]))
+    prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
+end
+
+
+#Data generation
+d1 = Gumbel()
+draw = rand(d1, 4000)
+ϵ1 = draw[1:2000]
+ϵ0 = draw[2001:4000]
+a_obs = sample(a, 2000, replace = true)
+#Assuming (μ, R) = (-1, -3)
+i_obs = zeros(2000)
+for i in 1:2000
+    if β*vf2[a_obs[i],1]+ R + ϵ1[i] > β*vf2[a_obs[i],2]+ μ*a_obs[i]+ϵ0[i]
+        i_obs[i] = 0
+    else
+        i_obs[i] = 1
+    end
+end
 
 ###################################
 #STEP 2: INNER NXFP LOOP
