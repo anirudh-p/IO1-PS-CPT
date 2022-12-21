@@ -118,8 +118,11 @@ for a in 1:5
     prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
 end
 
-function P(θ, i_obs, a_obs)
-    vf = VFI2(θ)                #Combined Steps b and c by including the VFI inside this inner loop
+function LL(θ, i_obs, a_obs)
+    vf = VFI2(θ)                #Combined Steps a, b and c by including the VFI(guess_θ) inside this inner loop
+    num = zeros(20000)
+    den = zeros(20000)
+
     for i in 1:20000
         if i_obs2[i] == 0.0
             d = 2
@@ -128,19 +131,15 @@ function P(θ, i_obs, a_obs)
         end
         Π = i_obs[i] * (R + ϵ1[i]) + (1-i_obs[i])*(μ*a_obs[i] + ϵ0[i])
 
-        nume = zeros(20000)
-        den = zeros(20000)
-
-        nume[i] = β*vf[Int(a_obs[i]),d]  + Π                                                   #Numerator of obs i is a function of the state at i and decision at i
+        num[i] = β*vf[Int(a_obs[i]),d]  + Π     #Numerator of obs i is a function of the state at i and decision at i
         den[i] = (β*vf[Int(a_obs[i]),1] + R + ϵ1[i]) + (β*vf[Int(a_obs[i]),2] + μ*a_obs[i] + ϵ0[i]) 
     end
 
-    print(nume)
-    #sum(numerator)  - sum(log(denominator))
+    return sum(num)  - sum(log.(den))
 end
 
 θ_prime = Inputs(-1,-5)
-temp = P(θ_prime, i_obs2, a_obs2)
+P = LL(θ_prime, i_obs2, a_obs2)
 
 ###################################
 #QUESTION 5.4: OUTER NXFP LOOP
