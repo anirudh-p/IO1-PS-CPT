@@ -12,7 +12,7 @@ using Optim
 using Expectations
 using Parameters
 
-Random.seed!(612)
+Random.seed!(100)
 #Set up the Parameters
 β = 0.9;
 μ = -1;
@@ -25,18 +25,9 @@ R = -3;
 #Set up the grid of possible state variables 
 a = [1,2,3,4,5] #Note: We have a small, finite set of possible states: a_t = 1,2,3,4,5
 
-#set up the parameter input structure
-@with_kw struct Inputs
-    μ::Float64 = -1 #Mean Transition Cost
-    R::Float64 = -3 # Replacement Cost
-end
-
-θ = Inputs(-1,-3) #Test
-
 # Main Value Function Iteration (VFI)
-function VFI2(θ, max_iter = 500, tol = 1e-6)
+function VFI2(μ, R, max_iter = 500, tol = 1e-6)
 
-    @unpack μ, R = θ
     v = rand(5,2)
     vprev = zeros(5,2)
     err = 1
@@ -55,7 +46,7 @@ function VFI2(θ, max_iter = 500, tol = 1e-6)
     return vprev
 end
 
-vf2 = VFI2(θ) 
+vf2 = VFI2(μ, R) 
 
 ###################################
 #QUESTION 4: DATA SIMULATION 
@@ -65,16 +56,6 @@ d1 = Gumbel()
 draw = rand(d1, 40000)
 ϵ1 = draw[1:20000]
 ϵ0 = draw[20001:40000]
-a_obs = sample(a, 20000, replace = true)
-#Assuming (μ, R) = (-1, -3)
-i_obs = zeros(20000)
-for i in 1:20000
-    if β*vf2[a_obs[i],1]+ R + ϵ1[i] > β*vf2[a_obs[i],2]+ μ*a_obs[i]+ϵ0[i]
-        i_obs[i] = 0
-    else
-        i_obs[i] = 1
-    end
-end
 
 ######################
 # Deterministic states
