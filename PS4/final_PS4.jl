@@ -25,10 +25,16 @@ R = -3;
 #Step 1.1: Set up the grid of possible state variables 
 a = [1,2,3,4,5] #Note: We have a small, finite set of possible states: a_t = 1,2,3,4,5
 
+@with_kw struct Inputs
+    μ::Float64 = -1 #Mean Transition Cost
+    R::Float64 = -3 # Replacement Cost
+end
 
-function VFI2(μ,R, max_iter = 500, tol = 1e-6)
+init_θ = Inputs(-1,-3)
 
-    #@unpack μ, R = θ
+function VFI2(θ, max_iter = 500, tol = 1e-6)
+
+    @unpack μ, R = θ
     v = rand(5,2)
     vprev = zeros(5,2)
     err = 1
@@ -47,18 +53,7 @@ function VFI2(μ,R, max_iter = 500, tol = 1e-6)
     return vprev
 end
 
-vf2 = VFI2(-1,-3)
-
-θ_init = [μ, R]
-#vf2 = VFI2(θ_init)
-
-#The probabilities of observing each choice
-prob2 = zeros(5,2)
-
-for a in 1:5
-    prob2[a,1] = exp(vf2[a,1])/(exp(vf2[a,1]) + exp(vf2[a,2]))
-    prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
-end
+vf2 = VFI2(init_θ)
 
 ###################################
 #STEP 2: DATA SIMULATION 
@@ -90,6 +85,14 @@ init_θ = (0,0)
 VFI2(θ)
 
 #Step 5.c: Estime the LL using the EV distribution of the Errors and the formula
+#The probabilities of observing each choice
+prob2 = zeros(5,2)
+
+for a in 1:5
+    prob2[a,1] = exp(vf2[a,1])/(exp(vf2[a,1]) + exp(vf2[a,2]))
+    prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
+end
+
 P(μ,R) = sum( u() +  )
 
 ###################################
