@@ -42,3 +42,9 @@ evupdate = in_loop(μ,R)
 p0(a) = exp(evupdate[1])/(exp(evupdate[1])+exp(evupdate[a+1]))
 
 p0(1)
+
+prob2 = zeros(5,2)
+for a in 1:5
+    prob2[a,1] = exp(vf2[a,1])/(exp(vf2[a,1]) + exp(vf2[a,2]))
+    prob2[a,2] = exp(vf2[a,2])/(exp(vf2[a,1]) + exp(vf2[a,2]))
+end
